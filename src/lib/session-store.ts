@@ -47,10 +47,10 @@ interface State {
 }
 
 const initialSpeakers: Speaker[] = [
-  { id: "s1", name: "Mari", color: "teal", x: 22, y: 26, large: false, pinned: false, nameSource: "tuvastatud" },
-  { id: "s2", name: "Jaan", color: "forest", x: 72, y: 24, large: false, pinned: false, nameSource: "tuvastatud" },
-  { id: "s3", name: "Evelyn", color: "coral", x: 70, y: 72, large: false, pinned: false, nameSource: "tuvastatud" },
-  { id: "s4", name: "Kõneleja 4", color: "amber", x: 24, y: 72, large: false, pinned: false, nameSource: "tuvastatud" },
+  { id: "s1", name: "Mari", color: "teal", x: 18, y: 30, large: false, pinned: false, nameSource: "tuvastatud" },
+  { id: "s2", name: "Jaan", color: "forest", x: 50, y: 22, large: false, pinned: false, nameSource: "tuvastatud" },
+  { id: "s3", name: "Evelyn", color: "coral", x: 80, y: 34, large: false, pinned: false, nameSource: "tuvastatud" },
+  { id: "s4", name: "Kõneleja 4", color: "amber", x: 62, y: 52, large: false, pinned: false, nameSource: "tuvastatud" },
 ];
 
 // Speaking turns: long contributions are broken into thought units (fragments)
