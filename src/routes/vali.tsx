@@ -100,11 +100,11 @@ function PresenceName({ s, p, fieldRef, lines, above }: { s: Speaker; p: number;
         {s.name}
       </span>
       <ol aria-live={active ? "polite" : "off"} aria-label={`${s.name} ütles`}
-        className={`pointer-events-none absolute left-1/2 w-[17rem] -translate-x-1/2 space-y-1 text-center text-base leading-snug ${above ? "bottom-full mb-2 flex flex-col-reverse" : "top-full mt-2"}`}
+        className={`pointer-events-none absolute left-1/2 w-[17rem] -translate-x-1/2 space-y-1 text-center text-base leading-snug ${above ? "bottom-full mb-2" : "top-full mt-2"}`}
         style={{ opacity: 0.35 + p * 0.65 }}>
-        {[...lines].reverse().map((u, i) => (
+        {lines.map((u, j) => { const i = lines.length - 1 - j; return (
           <li key={u.id} className={`caption-in transition-opacity duration-700 ${i === 0 && active ? "font-semibold" : "text-muted-foreground"}`} style={{ opacity: EMPHASIS[i] }}>{u.text}</li>
-        ))}
+        ); })}
       </ol>
     </div>
   );
