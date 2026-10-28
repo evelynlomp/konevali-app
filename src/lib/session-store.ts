@@ -67,7 +67,7 @@ export const SCRIPT: [string, string][] = [
 
 const now = () => new Date().toLocaleTimeString("et-EE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
-let state: State = {
+const initialState: State = {
   speakers: initialSpeakers,
   utterances: [],
   activeId: null,
@@ -76,6 +76,7 @@ let state: State = {
   audit: [{ id: "a0", time: "—", text: "Seanss alustati. Osalejaid teavitati salvestamisest." }],
   deleted: false,
 };
+let state: State = initialState;
 const listeners = new Set<() => void>();
 const set = (patch: Partial<State>) => {
   state = { ...state, ...patch };
@@ -87,7 +88,7 @@ export function useSession() {
   return useSyncExternalStore(
     (l) => (listeners.add(l), () => listeners.delete(l)),
     () => state,
-    () => state,
+    () => initialState,
   );
 }
 
