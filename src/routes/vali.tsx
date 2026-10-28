@@ -40,7 +40,7 @@ function FieldPage() {
         <span id="vali-help" className="sr-only">Liiguta nime nooleklahvidega, Shift-klahviga suurem samm. Asukoht jääb püsima.</span>
         {speakers.map((s) => (
           <PresenceName key={s.id} s={s} p={presenceOf(s.id, utterances, activeId)} fieldRef={fieldRef}
-            lines={utterances.filter((u) => u.speakerId === s.id).slice(-4)}
+            lines={utterances.filter((u) => u.speakerId === s.id).slice(-5)}
             above={speakers.some((o) => o.id !== s.id && o.y > s.y && o.y - s.y < 34 && Math.abs(o.x - s.x) < 26)} />
         ))}
         {utterances.length === 0 && <p className="absolute inset-x-0 bottom-4 text-center text-lg text-muted-foreground">{deleted ? "Väli on kustutatud." : "Väli ootab esimest häält…"}</p>}
@@ -68,7 +68,7 @@ function FieldPage() {
   );
 }
 
-const EMPHASIS = [1, 0.75, 0.5, 0.25];
+const EMPHASIS = [1, 0.7, 0.45, 0.22];
 function PresenceName({ s, p, fieldRef, lines, above }: { s: Speaker; p: number; fieldRef: React.RefObject<HTMLDivElement | null>; lines: Utterance[]; above: boolean }) {
   const drag = useRef(false);
   const glow = colorGlow[s.color];
@@ -100,11 +100,21 @@ function PresenceName({ s, p, fieldRef, lines, above }: { s: Speaker; p: number;
         {s.name}
       </span>
       <ol aria-live={active ? "polite" : "off"} aria-label={`${s.name} ütles`}
-        className={`pointer-events-none absolute left-1/2 w-[17rem] -translate-x-1/2 space-y-1 text-center text-base leading-snug ${above ? "bottom-full mb-2" : "top-full mt-2"}`}
+        className={`pointer-events-none absolute left-1/2 h-0 w-[18rem] -translate-x-1/2 text-center text-base leading-snug ${above ? "bottom-full mb-3" : "top-full mt-3"}`}
         style={{ opacity: 0.35 + p * 0.65 }}>
-        {lines.map((u, j) => { const i = lines.length - 1 - j; return (
-          <li key={u.id} className={`caption-in transition-opacity duration-700 ${i === 0 && active ? "font-semibold" : "text-muted-foreground"}`} style={{ opacity: EMPHASIS[i] }}>{u.text}</li>
-        ); })}
+        {(() => {
+          // newest sits closest to the name; older ones drift outward and fade
+          const recent = [...lines].reverse();
+          let offset = 0;
+          return recent.map((u, i) => {
+            const rows = i === 0 ? Math.ceil(u.text.length / 32) : Math.min(2, Math.ceil(u.text.length / 34));
+            const y = offset + i * 0.5; offset += rows * 1.4;
+            return (
+              <li key={u.id} className={`absolute inset-x-0 ${above ? "bottom-0" : "top-0"} ${i === 0 && active ? "font-semibold" : "text-muted-foreground"} ${i > 0 ? "line-clamp-2" : ""}`}
+                style={{ transform: `translateY(${above ? -y : y}rem) scale(${1 - i * 0.04})`, opacity: EMPHASIS[i] ?? 0, transition: "transform 1.8s cubic-bezier(.22,.8,.3,1), opacity 2.2s ease" }}>{u.text}</li>
+            );
+          });
+        })()}
       </ol>
     </div>
   );
