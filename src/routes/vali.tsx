@@ -31,68 +31,20 @@ function FieldPage() {
   const { speakers, utterances, activeId, running, deleted } = useSession();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const fieldRef = useRef<HTMLDivElement>(null);
-  const active = speakers.find((s) => s.id === activeId);
-  const last = utterances[utterances.length - 1];
-  const thread = last ? utterances.filter((u) => u.turn === last.turn) : [];
-  // gentle traces of earlier turns
-  const earlierTurns: Utterance[][] = [];
-  for (let i = utterances.length - 1; i >= 0 && earlierTurns.length < 3; i--) {
-    const u = utterances[i]!;
-    if (u.turn === last?.turn) continue;
-    const g = earlierTurns.find((t) => t[0]!.turn === u.turn);
-    if (g) g.unshift(u); else earlierTurns.push([u]);
-  }
-  const byId = (id: string) => speakers.find((s) => s.id === id)!;
-
   return (
     <div className="relative flex flex-1 flex-col">
       <h1 className="sr-only">Kõneväli</h1>
 
       {/* Shared spatial field — mist gathers where voices are; names hold their place */}
-      <div ref={fieldRef} className="absolute -inset-x-4 -top-28 -bottom-8" role="application" aria-label="Vestlusväli: osalejate asukohad" aria-describedby="vali-help">
+      <div ref={fieldRef} className="relative min-h-[72vh] flex-1" role="application" aria-label="Vestlusväli: osalejate asukohad" aria-describedby="vali-help">
         <span id="vali-help" className="sr-only">Liiguta nime nooleklahvidega, Shift-klahviga suurem samm. Asukoht jääb püsima.</span>
         {speakers.map((s) => (
-          <PresenceName key={s.id} s={s} p={presenceOf(s.id, utterances, activeId)} fieldRef={fieldRef} />
+          <PresenceName key={s.id} s={s} p={presenceOf(s.id, utterances, activeId)} fieldRef={fieldRef}
+            lines={utterances.filter((u) => u.speakerId === s.id).slice(-4)}
+            above={speakers.some((o) => o.id !== s.id && o.y > s.y && o.y - s.y < 34 && Math.abs(o.x - s.x) < 26)} />
         ))}
+        {utterances.length === 0 && <p className="absolute inset-x-0 bottom-4 text-center text-lg text-muted-foreground">{deleted ? "Väli on kustutatud." : "Väli ootab esimest häält…"}</p>}
       </div>
-
-      {/* Earlier turns leave faint traces */}
-      <div className="pointer-events-none relative mt-auto space-y-2 pt-[45vh]" aria-label="Varasemad mõtted">
-        {earlierTurns.reverse().map((t, i, arr) => {
-          const s = byId(t[0]!.speakerId);
-          return (
-            <p key={t[0]!.turn} className="max-w-3xl truncate text-sm transition-opacity duration-1000" style={{ opacity: 0.25 + (i / Math.max(1, arr.length)) * 0.35 }}>
-              <span className="font-bold" style={{ color: colorGlow[s.color] }}>{s.name}</span>{" "}
-              <span className="text-muted-foreground">{t.map((u) => u.text).join(" ")}</span>
-            </p>
-          );
-        })}
-      </div>
-
-      {/* The current thought thread */}
-      <section aria-live="polite" aria-label="Praegune mõttekäik" className="pointer-events-none relative flex flex-col justify-end py-8">
-        {active && thread.length > 0 ? (
-          <div className="max-w-4xl">
-            <p className="flex items-center gap-3 text-xl font-bold" style={{ color: colorGlow[active.color] }}>
-              {active.name}
-            </p>
-            <ol className="mt-4 border-l-2 pl-6" style={{ borderColor: `color-mix(in oklab, ${colorGlow[active.color]} 45%, transparent)` }}>
-              {thread.slice(-4).map((u, i, arr) => {
-                const current = i === arr.length - 1;
-                return (
-                  <li key={u.id} className={`caption-in relative py-2 transition-all duration-700 ${current ? "text-3xl font-semibold leading-snug sm:text-4xl" : "text-lg text-muted-foreground"}`}
-                    style={{ opacity: current ? 1 : 0.45 + (i / arr.length) * 0.4 }}>
-                    <span aria-hidden className="absolute -left-[1.95rem] top-1/2 h-0.5 w-4" style={{ background: colorGlow[active.color] }} />
-                    {u.text}
-                  </li>
-                );
-              })}
-            </ol>
-          </div>
-        ) : (
-          <p className="text-2xl text-muted-foreground">{deleted ? "Väli on kustutatud." : "Väli ootab esimest häält…"}</p>
-        )}
-      </section>
 
       {/* Quiet secondary controls */}
       <div className="relative flex flex-wrap items-center gap-3 pb-2 no-print">
@@ -116,11 +68,12 @@ function FieldPage() {
   );
 }
 
-function PresenceName({ s, p, fieldRef }: { s: Speaker; p: number; fieldRef: React.RefObject<HTMLDivElement | null> }) {
+const EMPHASIS = [1, 0.75, 0.5, 0.25];
+function PresenceName({ s, p, fieldRef, lines, above }: { s: Speaker; p: number; fieldRef: React.RefObject<HTMLDivElement | null>; lines: Utterance[]; above: boolean }) {
   const drag = useRef(false);
   const glow = colorGlow[s.color];
   const active = p >= 1;
-  const move = (x: number, y: number) => actions.updateSpeaker(s.id, { x: Math.min(94, Math.max(6, x)), y: Math.min(60, Math.max(16, y)) });
+  const move = (x: number, y: number) => actions.updateSpeaker(s.id, { x: Math.min(94, Math.max(6, x)), y: Math.min(85, Math.max(6, y)) });
   return (
     <div
       role="button" tabIndex={0}
@@ -146,6 +99,13 @@ function PresenceName({ s, p, fieldRef }: { s: Speaker; p: number; fieldRef: Rea
         style={{ fontSize: `${1 + p * 1.1}rem`, opacity: 0.4 + p * 0.6, color: active ? glow : undefined }}>
         {s.name}
       </span>
+      <ol aria-live={active ? "polite" : "off"} aria-label={`${s.name} ütles`}
+        className={`pointer-events-none absolute left-1/2 w-[17rem] -translate-x-1/2 space-y-1 text-center text-base leading-snug ${above ? "bottom-full mb-2 flex flex-col-reverse" : "top-full mt-2"}`}
+        style={{ opacity: 0.35 + p * 0.65 }}>
+        {[...lines].reverse().map((u, i) => (
+          <li key={u.id} className={`caption-in transition-opacity duration-700 ${i === 0 && active ? "font-semibold" : "text-muted-foreground"}`} style={{ opacity: EMPHASIS[i] }}>{u.text}</li>
+        ))}
+      </ol>
     </div>
   );
 }
