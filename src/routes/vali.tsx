@@ -48,7 +48,7 @@ function FieldPage() {
       <h1 className="sr-only">Kõneväli</h1>
 
       {/* Presence currents — one soft mist band per voice, filling the whole field */}
-      <div aria-hidden className="pointer-events-none absolute -inset-x-4 -top-28 -bottom-8">
+      <div aria-hidden className="pointer-events-none absolute -inset-x-4 -top-28 -bottom-8" style={{ maskImage: "radial-gradient(75% 70% at 50% 50%, black 40%, transparent 100%)", WebkitMaskImage: "radial-gradient(75% 70% at 50% 50%, black 40%, transparent 100%)" }}>
         {speakers.map((s, i) => {
           const p = presenceOf(s.id, utterances, activeId);
           return (
