@@ -25,10 +25,10 @@ function HomePage() {
           <h1 id="pealkiri" className="font-display text-6xl font-bold tracking-tight sm:text-7xl">Kõneväli</h1>
           <p className="mt-4 text-3xl font-semibold leading-tight text-primary sm:text-4xl">Näe, kes räägib. Mõista, mis toimub.</p>
           <p className="mt-6 max-w-xl text-xl leading-relaxed text-muted-foreground">
-            Kõneväli aitab jälgida vestlusi reaalajas, muutes kõne nähtavaks ruumis. See toetab võrdset osalemist, kirjutustõlget ja ligipääsetavat suhtlust.
+            Kõneväli kirjeldab vestluse reaalajas: iga kõneleja nimi on oma kohal ja iga lause ilmub just tema juurde. Kogu vestlus jääb alles transkripti ja kokkuvõttesse.
           </p>
           <div className="mt-10 flex flex-wrap items-center gap-4">
-            <Link to="/vali" className="inline-flex min-h-12 items-center rounded-full bg-primary px-8 text-lg font-bold text-primary-foreground transition-transform hover:scale-105">Ava demo</Link>
+            <Link to="/vali" className="inline-flex min-h-12 items-center rounded-full bg-primary px-8 text-lg font-bold text-primary-foreground transition-transform hover:scale-105">Astu vestlusesse</Link>
             <a href="#kuidas" className="inline-flex min-h-12 items-center rounded-full border border-border px-8 font-semibold hover:bg-muted">Kuidas see töötab</a>
           </div>
         </div>
@@ -40,8 +40,8 @@ function HomePage() {
         <ol className="mt-8 grid gap-10 sm:grid-cols-3">
           {[
             ["1. Hääled tuvastatakse", "Iga uus kõneleja ilmub väljale automaatselt. Saad nime muuta ja ta sobivasse kohta lohistada."],
-            ["2. Kõne ilmub kõneleja juurde", "Iga lause tekib selle inimese lähedale, kes selle ütles — sõna-sõnalt, ilma kokkuvõtteta."],
-            ["3. Mälu hajub ise", "Värskeim lause on selgeim, varasemad tuhmuvad. Kogu tekst jääb alles transkripti."],
+            ["2. Kõne muutub nähtavaks", "Iga lause tekib selle inimese lähedale, kes selle ütles — sõna-sõnalt, kohe pärast ütlemist."],
+            ["3. Midagi ei lähe kaduma", "Kogu vestlus jääb alles: transkript ja kokkuvõte on loetavad ka pärast kohtumist."],
           ].map(([t, d]) => (
             <li key={t} className="border-l-2 border-primary/50 pl-5">
               <h3 className="text-xl font-bold text-primary">{t}</h3>
@@ -51,15 +51,15 @@ function HomePage() {
         </ol>
       </section>
 
-      <section aria-labelledby="vaartused" className="relative pb-20">
-        <h2 id="vaartused" className="max-w-3xl text-3xl font-bold leading-tight">
-          Sa ei pea küsima, mida just öeldi. Sa näed, kuidas vestlus liigub — ja võid sellesse astuda.
+      <section aria-labelledby="tulemused" className="relative pb-20">
+        <h2 id="tulemused" className="max-w-3xl text-3xl font-bold leading-tight">
+          Mida saad kohe teha
         </h2>
         <ul className="mt-12 grid gap-10 sm:grid-cols-3">
           {[
-            ["Kuuluvus", "Kes räägib, muutub nähtavamaks. Kes vaikib, rahuneb taustale. Tunned vestluse rütmi ilma, et peaksid seda arvama."],
-            ["Väärikus", "Pikad mõtted jagunevad selgeteks sammudeks. Ei mingit tekstimüüri — saad jälgida, mitte tabada."],
-            ["Võrdne ligipääs", "Tehisaru aitab, inimene otsustab. Kõike saab parandada ning andmed jäävad sinu omaks."],
+            ["Näed, kes räägib", "Iga kõneleja nimi on väljal tema kohal. Rääkiva inimese nimi on eredaim ja suurem."],
+            ["Jälgid vestlust reaalajas", "Lausemed ilmuvad kõneleja juurde selles järjekorras, kui need öeldakse."],
+            ["Saad transkripti ja kokkuvõtte", "Vestluse tekst ja kokkuvõte jäävad alles — saad neid lugeda, otsida ja eksportida."],
           ].map(([t, d]) => (
             <li key={t} className="border-l-2 border-primary/50 pl-5">
               <h3 className="text-xl font-bold text-primary">{t}</h3>
