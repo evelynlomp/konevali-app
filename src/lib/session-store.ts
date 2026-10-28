@@ -163,7 +163,7 @@ export const actions = {
     scriptIndex = 0;
     set({ deleted: false, running: true, ...log("Uus seanss alustati.") });
   },
-  addSpeaker(name?: string, id = crypto.randomUUID(), detected = false) {
+  addSpeaker(name?: string, id: string = crypto.randomUUID(), detected = false) {
     const n = name?.trim() || `Kõneleja ${state.speakers.length + 1}`;
     const sp: Speaker = { id, name: n, color: autoColor(state.speakers), ...freeSpot(state.speakers), large: false, pinned: false, nameSource: detected ? "tuvastatud" : "kasutaja" };
     set({ speakers: [...state.speakers, sp], ...log(detected ? `Tuvastati uus kõneleja: „${n}”.` : `Lisati osaleja „${n}”.`) });
