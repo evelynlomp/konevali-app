@@ -95,7 +95,7 @@ let scriptIndex = 0;
 export const actions = {
   tick() {
     if (!state.running || state.deleted) return;
-    const [speakerId, text] = SCRIPT[scriptIndex % SCRIPT.length];
+    const [speakerId, text] = SCRIPT[scriptIndex % SCRIPT.length]!;
     scriptIndex++;
     set({
       utterances: [...state.utterances, { id: crypto.randomUUID(), speakerId, text, time: now() }],

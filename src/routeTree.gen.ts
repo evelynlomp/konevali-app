@@ -10,33 +10,63 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PrivaatsusRouteImport } from './routes/privaatsus'
+import { Route as TranskriptRouteImport } from './routes/transkript'
+import { Route as UlevaadeRouteImport } from './routes/ulevaade'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivaatsusRoute = PrivaatsusRouteImport.update({
+  id: '/privaatsus',
+  path: '/privaatsus',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TranskriptRoute = TranskriptRouteImport.update({
+  id: '/transkript',
+  path: '/transkript',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UlevaadeRoute = UlevaadeRouteImport.update({
+  id: '/ulevaade',
+  path: '/ulevaade',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/privaatsus': typeof PrivaatsusRoute
+  '/transkript': typeof TranskriptRoute
+  '/ulevaade': typeof UlevaadeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/privaatsus': typeof PrivaatsusRoute
+  '/transkript': typeof TranskriptRoute
+  '/ulevaade': typeof UlevaadeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/privaatsus': typeof PrivaatsusRoute
+  '/transkript': typeof TranskriptRoute
+  '/ulevaade': typeof UlevaadeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/privaatsus' | '/transkript' | '/ulevaade'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/privaatsus' | '/transkript' | '/ulevaade'
+  id: '__root__' | '/' | '/privaatsus' | '/transkript' | '/ulevaade'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PrivaatsusRoute: typeof PrivaatsusRoute
+  TranskriptRoute: typeof TranskriptRoute
+  UlevaadeRoute: typeof UlevaadeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +78,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privaatsus': {
+      id: '/privaatsus'
+      path: '/privaatsus'
+      fullPath: '/privaatsus'
+      preLoaderRoute: typeof PrivaatsusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transkript': {
+      id: '/transkript'
+      path: '/transkript'
+      fullPath: '/transkript'
+      preLoaderRoute: typeof TranskriptRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ulevaade': {
+      id: '/ulevaade'
+      path: '/ulevaade'
+      fullPath: '/ulevaade'
+      preLoaderRoute: typeof UlevaadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PrivaatsusRoute: PrivaatsusRoute,
+  TranskriptRoute: TranskriptRoute,
+  UlevaadeRoute: UlevaadeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
