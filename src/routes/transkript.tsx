@@ -73,7 +73,7 @@ function TranscriptPage() {
           {groups.map((g) => {
             const s = speakers.find((x) => x.id === g.speakerId);
             return (
-              <li key={g.items[0].id} className="flex gap-4 rounded-md border border-border bg-card p-4">
+              <li key={g.items[0]!.id} className="flex gap-4 rounded-md border border-border bg-card p-4">
                 <span aria-hidden className={`w-1.5 shrink-0 rounded-sm ${colorBg[s?.color ?? "teal"]}`} />
                 <div className="flex-1">
                   <h2 className="font-bold text-lg">{name(g.speakerId)}</h2>

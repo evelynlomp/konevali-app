@@ -92,7 +92,7 @@ function LivePage() {
 }
 
 function SpeakerCard({ s, active, caption, roomRef, onSelect, selected }: {
-  s: Speaker; active: boolean; caption?: string; roomRef: React.RefObject<HTMLDivElement | null>; onSelect: () => void; selected: boolean;
+  s: Speaker; active: boolean; caption?: string | undefined; roomRef: React.RefObject<HTMLDivElement | null>; onSelect: () => void; selected: boolean;
 }) {
   const drag = useRef(false);
   const move = (x: number, y: number) => actions.updateSpeaker(s.id, { x: Math.min(92, Math.max(8, x)), y: Math.min(90, Math.max(10, y)) });
@@ -106,7 +106,7 @@ function SpeakerCard({ s, active, caption, roomRef, onSelect, selected }: {
       onKeyDown={(e) => {
         const step = e.shiftKey ? 10 : 3;
         const d = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
-        if (d) { e.preventDefault(); move(s.x + d[0], s.y + d[1]); }
+        if (d) { e.preventDefault(); move(s.x + d[0]!, s.y + d[1]!); }
       }}
       onPointerDown={(e) => { drag.current = true; (e.target as HTMLElement).setPointerCapture(e.pointerId); onSelect(); }}
       onPointerMove={(e) => {
