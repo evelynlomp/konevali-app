@@ -48,7 +48,7 @@ function FieldPage() {
       <h1 className="sr-only">Kõneväli</h1>
 
       {/* Presence currents — one soft mist band per voice, filling the whole field */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div aria-hidden className="pointer-events-none absolute -inset-x-4 -top-28 -bottom-8">
         {speakers.map((s, i) => {
           const p = presenceOf(s.id, utterances, activeId);
           return (

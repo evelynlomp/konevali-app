@@ -19,7 +19,7 @@ export function AppShell() {
   }, []);
 
   return (
-    <div className="relative min-h-screen flex flex-col aurora-field">
+    <div className="relative min-h-screen flex flex-col overflow-x-clip aurora-field">
       <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="aurora-blob left-[5%] top-[5%] size-[28rem]" style={{ background: "var(--glow-teal)", opacity: 0.18 }} />
         <div className="aurora-blob right-[0%] top-[40%] size-[32rem]" style={{ background: "var(--glow-petrol)", opacity: 0.16, animationDelay: "-9s" }} />
