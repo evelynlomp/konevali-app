@@ -79,8 +79,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "RuumiSubtiitrid" },
-      { name: "description", content: "Reaalajas subtiitrid koos ruumikaardiga: näe, kes räägib ja kus." },
+      { title: "Kõneväli" },
+      { name: "description", content: "Näe vestlust enda ümber: kõne muutub nähtavaks elavaks väljaks." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
