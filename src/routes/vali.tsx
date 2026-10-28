@@ -74,9 +74,6 @@ function FieldPage() {
         {active && thread.length > 0 ? (
           <div className="max-w-4xl">
             <p className="flex items-center gap-3 text-xl font-bold" style={{ color: colorGlow[active.color] }}>
-              <span aria-hidden className="relative inline-flex size-4">
-                <span className="ripple absolute inset-0 rounded-full border-2" style={{ borderColor: colorGlow[active.color] }} />
-              </span>
               {active.name}
             </p>
             <ol className="mt-4 border-l-2 pl-6" style={{ borderColor: `color-mix(in oklab, ${colorGlow[active.color]} 45%, transparent)` }}>
