@@ -25,7 +25,7 @@ function HomePage() {
           <h1 id="pealkiri" className="font-display text-6xl font-bold tracking-tight sm:text-7xl">Kõneväli</h1>
           <p className="mt-4 text-3xl font-semibold leading-tight text-primary sm:text-4xl">Näe, kes räägib. Mõista, mis toimub.</p>
           <p className="mt-6 max-w-xl text-xl leading-relaxed text-muted-foreground">
-            Kõneväli aitab jälgida vestlusi reaalajas, muutes kõne nähtavaks ruumis. See toetab võrdset osalemist, kirjutustõlget ja ligipääsetavat suhtlust.
+            Kõneväli kirjeldab vestluse reaalajas: iga kõneleja nimi on oma kohal ja iga lause ilmub just tema juurde. Kogu vestlus jääb alles transkripti ja kokkuvõttesse.
           </p>
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <Link to="/vali" className="inline-flex min-h-12 items-center rounded-full bg-primary px-8 text-lg font-bold text-primary-foreground transition-transform hover:scale-105">Astu vestlusesse</Link>
