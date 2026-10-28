@@ -73,10 +73,30 @@ const TURNS: [string, string[]][] = [
   ]],
   ["s1", ["Olen nõus.", "Otsustame, et alates novembrist teeme nii."]],
   ["s4", ["Panen selle protokolli kirja."]],
+  ["s5", ["Vabandust, et hilinesin.", "Kas saaksin lühidalt lisada midagi Tartu kohta?"]],
+  ["s1", ["Muidugi, palun."]],
 ];
 export const SCRIPT: [string, string, number][] = TURNS.flatMap(([sp, frags], turn) =>
   frags.map((f) => [sp, f, turn] as [string, string, number]),
 );
+
+/** Order defines automatic assignment; colour is never the only cue. */
+export const PALETTE: SpeakerColor[] = ["teal", "amber", "sky", "coral", "forest", "petrol"];
+
+function autoColor(list: Speaker[]): SpeakerColor {
+  const used = (c: SpeakerColor) => list.filter((s) => s.color === c).length;
+  return [...PALETTE].sort((a, b) => used(a) - used(b) || PALETTE.indexOf(a) - PALETTE.indexOf(b))[0]!;
+}
+
+/** Find the free spot farthest from everyone already in the field. */
+export function freeSpot(list: Speaker[]): { x: number; y: number } {
+  let best = { x: 50, y: 40 }, bestD = -1;
+  for (let gx = 10; gx <= 90; gx += 8) for (let gy = 8; gy <= 80; gy += 8) {
+    const d = list.length ? Math.min(...list.map((s) => Math.hypot(s.x - gx, (s.y - gy) * 1.4))) : 99 - Math.abs(gx - 50);
+    if (d > bestD) { bestD = d; best = { x: gx, y: gy }; }
+  }
+  return best;
+}
 
 const now = () => new Date().toLocaleTimeString("et-EE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
@@ -112,6 +132,7 @@ export const actions = {
     const [speakerId, text, turnNo] = SCRIPT[scriptIndex % SCRIPT.length]!;
     const round = Math.floor(scriptIndex / SCRIPT.length);
     scriptIndex++;
+    if (!state.speakers.some((s) => s.id === speakerId)) actions.addSpeaker(undefined, speakerId, true);
     set({
       utterances: [...state.utterances, { id: crypto.randomUUID(), speakerId, text, time: now(), turn: `${round}-${turnNo}` }],
       previousId: state.activeId,
@@ -141,6 +162,26 @@ export const actions = {
   restart() {
     scriptIndex = 0;
     set({ deleted: false, running: true, ...log("Uus seanss alustati.") });
+  },
+  addSpeaker(name?: string, id = crypto.randomUUID(), detected = false) {
+    const n = name?.trim() || `Kõneleja ${state.speakers.length + 1}`;
+    const sp: Speaker = { id, name: n, color: autoColor(state.speakers), ...freeSpot(state.speakers), large: false, pinned: false, nameSource: detected ? "tuvastatud" : "kasutaja" };
+    set({ speakers: [...state.speakers, sp], ...log(detected ? `Tuvastati uus kõneleja: „${n}”.` : `Lisati osaleja „${n}”.`) });
+  },
+  removeSpeaker(id: string) {
+    const s = state.speakers.find((x) => x.id === id);
+    if (!s) return;
+    set({ speakers: state.speakers.filter((x) => x.id !== id), activeId: state.activeId === id ? null : state.activeId, ...log(`Osaleja „${s.name}” eemaldati väljalt.`) });
+  },
+  merge(fromId: string, intoId: string) {
+    const a = state.speakers.find((x) => x.id === fromId), b = state.speakers.find((x) => x.id === intoId);
+    if (!a || !b || a.id === b.id) return;
+    set({
+      speakers: state.speakers.filter((x) => x.id !== fromId),
+      utterances: state.utterances.map((u) => (u.speakerId === fromId ? { ...u, speakerId: intoId } : u)),
+      activeId: state.activeId === fromId ? intoId : state.activeId,
+      ...log(`Kõneleja „${a.name}” liideti kõnelejaga „${b.name}”.`),
+    });
   },
   log(text: string) {
     set(log(text));
