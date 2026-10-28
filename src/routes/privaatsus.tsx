@@ -5,9 +5,9 @@ import { actions, useSession } from "@/lib/session-store";
 export const Route = createFileRoute("/privaatsus")({
   head: () => ({
     meta: [
-      { title: "Andmed ja privaatsus – RuumiSubtiitrid" },
+      { title: "Andmed ja privaatsus – Kõneväli" },
       { name: "description", content: "Millised andmed kogutakse, miks, kui kaua neid hoitakse ja muudatuste ajalugu." },
-      { property: "og:title", content: "Andmed ja privaatsus – RuumiSubtiitrid" },
+      { property: "og:title", content: "Andmed ja privaatsus – Kõneväli" },
       { property: "og:description", content: "Läbipaistev ülevaade andmetöötlusest ja tehisaru kasutamisest." },
     ],
   }),

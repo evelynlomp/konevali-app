@@ -6,10 +6,10 @@ import { colorBg } from "@/components/AppShell";
 export const Route = createFileRoute("/transkript")({
   head: () => ({
     meta: [
-      { title: "Transkript – RuumiSubtiitrid" },
-      { name: "description", content: "Koosoleku täielik transkript kõnelejate kaupa, ekspordi TXT või PDF-ina." },
-      { property: "og:title", content: "Transkript – RuumiSubtiitrid" },
-      { property: "og:description", content: "Koosoleku transkript kõnelejate ja ajatemplitega." },
+      { title: "Transkript – Kõneväli" },
+      { name: "description", content: "Vestluse täielik transkript kõnelejate kaupa, ekspordi TXT või PDF-ina." },
+      { property: "og:title", content: "Transkript – Kõneväli" },
+      { property: "og:description", content: "Vestluse transkript kõnelejate ja ajatemplitega." },
     ],
   }),
   component: TranscriptPage,

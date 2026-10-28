@@ -6,10 +6,10 @@ import { AiBadge } from "@/components/AppShell";
 export const Route = createFileRoute("/ulevaade")({
   head: () => ({
     meta: [
-      { title: "Kokkuvõte – RuumiSubtiitrid" },
-      { name: "description", content: "Koosoleku teemad, otsused ja tegevused – üle vaadatav ja muudetav kokkuvõte." },
-      { property: "og:title", content: "Kokkuvõte – RuumiSubtiitrid" },
-      { property: "og:description", content: "Koosoleku teemad, otsused ja tegevused selges eesti keeles." },
+      { title: "Kokkuvõte – Kõneväli" },
+      { name: "description", content: "Vestluse teemad, otsused ja tegevused – üle vaadatav ja muudetav kokkuvõte." },
+      { property: "og:title", content: "Kokkuvõte – Kõneväli" },
+      { property: "og:description", content: "Vestluse teemad, otsused ja tegevused selges eesti keeles." },
     ],
   }),
   component: InsightsPage,

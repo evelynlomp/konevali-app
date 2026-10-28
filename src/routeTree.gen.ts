@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as PrivaatsusRouteImport } from './routes/privaatsus'
 import { Route as TranskriptRouteImport } from './routes/transkript'
 import { Route as UlevaadeRouteImport } from './routes/ulevaade'
+import { Route as ValiRouteImport } from './routes/vali'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,18 +35,25 @@ const UlevaadeRoute = UlevaadeRouteImport.update({
   path: '/ulevaade',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ValiRoute = ValiRouteImport.update({
+  id: '/vali',
+  path: '/vali',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/privaatsus': typeof PrivaatsusRoute
   '/transkript': typeof TranskriptRoute
   '/ulevaade': typeof UlevaadeRoute
+  '/vali': typeof ValiRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/privaatsus': typeof PrivaatsusRoute
   '/transkript': typeof TranskriptRoute
   '/ulevaade': typeof UlevaadeRoute
+  '/vali': typeof ValiRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,14 @@ export interface FileRoutesById {
   '/privaatsus': typeof PrivaatsusRoute
   '/transkript': typeof TranskriptRoute
   '/ulevaade': typeof UlevaadeRoute
+  '/vali': typeof ValiRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/privaatsus' | '/transkript' | '/ulevaade'
+  fullPaths: '/' | '/privaatsus' | '/transkript' | '/ulevaade' | '/vali'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/privaatsus' | '/transkript' | '/ulevaade'
-  id: '__root__' | '/' | '/privaatsus' | '/transkript' | '/ulevaade'
+  to: '/' | '/privaatsus' | '/transkript' | '/ulevaade' | '/vali'
+  id: '__root__' | '/' | '/privaatsus' | '/transkript' | '/ulevaade' | '/vali'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +76,7 @@ export interface RootRouteChildren {
   PrivaatsusRoute: typeof PrivaatsusRoute
   TranskriptRoute: typeof TranskriptRoute
   UlevaadeRoute: typeof UlevaadeRoute
+  ValiRoute: typeof ValiRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UlevaadeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/vali': {
+      id: '/vali'
+      path: '/vali'
+      fullPath: '/vali'
+      preLoaderRoute: typeof ValiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,6 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivaatsusRoute: PrivaatsusRoute,
   TranskriptRoute: TranskriptRoute,
   UlevaadeRoute: UlevaadeRoute,
+  ValiRoute: ValiRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
