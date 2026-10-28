@@ -36,7 +36,7 @@ function FieldPage() {
         {speakers.map((s) => (
           <PresenceName key={s.id} s={s} p={presenceFromRank(rank(s.id))} fieldRef={fieldRef} crowded={crowded}
             lines={memoryFromRank(rank(s.id)) ? utterances.filter((u) => u.speakerId === s.id).slice(-memoryFromRank(rank(s.id))) : []}
-            above={speakers.some((o) => o.id !== s.id && o.y > s.y && o.y - s.y < 34 && Math.abs(o.x - s.x) < 26)} />
+            above={s.y > 55 || (s.y > 30 && speakers.some((o) => o.id !== s.id && o.y > s.y && o.y - s.y < 30 && Math.abs(o.x - s.x) < 22))} />
         ))}
         {utterances.length === 0 && <p className="absolute inset-x-0 bottom-4 text-center text-lg text-muted-foreground">{deleted ? "Väli on kustutatud." : "Väli ootab esimest häält…"}</p>}
       </div>
@@ -88,7 +88,7 @@ function PresenceName({ s, p, fieldRef, lines, above, crowded }: { s: Speaker; p
         move(((e.clientX - r.left) / r.width) * 100, ((e.clientY - r.top) / r.height) * 100);
       }}
       onPointerUp={() => { if (drag.current) actions.log(`Hääle „${s.name}” kohta väljal muudeti.`); drag.current = false; }}
-      style={{ left: `${s.x}%`, top: `${s.y}%`, touchAction: "none" }}
+      style={{ left: `${s.x}%`, top: `${s.y}%`, touchAction: "none", zIndex: Math.round(p * 10) }}
       className="absolute -translate-x-1/2 -translate-y-1/2 cursor-grab select-none rounded-md px-2 active:cursor-grabbing"
     >
       <span aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[50%] transition-all duration-[2400ms]"
