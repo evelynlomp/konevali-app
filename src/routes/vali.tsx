@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { actions, COLOR_LABELS, useSession, type Speaker, type SpeakerColor, type Utterance } from "@/lib/session-store";
 import { colorGlow } from "@/components/AppShell";
 
@@ -30,6 +30,7 @@ const presenceWord = (p: number) => (p >= 1 ? "räägib praegu" : p > 0.5 ? "rä
 function FieldPage() {
   const { speakers, utterances, activeId, running, deleted } = useSession();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const fieldRef = useRef<HTMLDivElement>(null);
   const active = speakers.find((s) => s.id === activeId);
   const last = utterances[utterances.length - 1];
   const thread = last ? utterances.filter((u) => u.turn === last.turn) : [];
@@ -47,39 +48,16 @@ function FieldPage() {
     <div className="relative flex flex-1 flex-col">
       <h1 className="sr-only">Kõneväli</h1>
 
-      {/* Presence currents — one soft mist band per voice, filling the whole field */}
-      <div aria-hidden className="pointer-events-none absolute -inset-x-4 -top-28 -bottom-8" style={{ maskImage: "radial-gradient(75% 70% at 50% 50%, black 40%, transparent 100%)", WebkitMaskImage: "radial-gradient(75% 70% at 50% 50%, black 40%, transparent 100%)" }}>
-        {speakers.map((s, i) => {
-          const p = presenceOf(s.id, utterances, activeId);
-          return (
-            <div key={s.id} className="presence-current"
-              style={{
-                top: `${8 + i * (80 / Math.max(1, speakers.length - 1))}%`,
-                background: `radial-gradient(60% 50% at ${30 + ((i * 23) % 40)}% 50%, ${colorGlow[s.color]}, transparent 70%)`,
-                opacity: p * 0.75,
-                transform: `translateY(-50%) scaleY(${0.5 + p})`,
-                animationDelay: `${-i * 5}s`,
-              }} />
-          );
-        })}
+      {/* Shared spatial field — mist gathers where voices are; names hold their place */}
+      <div ref={fieldRef} className="absolute -inset-x-4 -top-28 -bottom-8" role="application" aria-label="Vestlusväli: osalejate asukohad" aria-describedby="vali-help">
+        <span id="vali-help" className="sr-only">Liiguta nime nooleklahvidega, Shift-klahviga suurem samm. Asukoht jääb püsima.</span>
+        {speakers.map((s) => (
+          <PresenceName key={s.id} s={s} p={presenceOf(s.id, utterances, activeId)} fieldRef={fieldRef} />
+        ))}
       </div>
 
-      {/* Presence legend — calm, quiet labels; brightness follows presence */}
-      <ul aria-label="Kohalolu vestluses" className="relative flex flex-wrap gap-x-6 gap-y-2 pt-2">
-        {speakers.map((s) => {
-          const p = presenceOf(s.id, utterances, activeId);
-          return (
-            <li key={s.id} className="flex items-center gap-2 font-semibold transition-opacity duration-1000" style={{ opacity: 0.35 + p * 0.65 }}>
-              <span aria-hidden className="h-1 rounded-full transition-all duration-1000" style={{ width: `${0.75 + p * 2.5}rem`, background: colorGlow[s.color] }} />
-              <span className={p >= 1 ? "text-lg" : "text-sm"}>{s.name}</span>
-              <span className="sr-only">: {presenceWord(p)}</span>
-            </li>
-          );
-        })}
-      </ul>
-
       {/* Earlier turns leave faint traces */}
-      <div className="relative mt-8 space-y-2" aria-label="Varasemad mõtted">
+      <div className="pointer-events-none relative mt-auto space-y-2 pt-[45vh]" aria-label="Varasemad mõtted">
         {earlierTurns.reverse().map((t, i, arr) => {
           const s = byId(t[0]!.speakerId);
           return (
@@ -92,7 +70,7 @@ function FieldPage() {
       </div>
 
       {/* The current thought thread */}
-      <section aria-live="polite" aria-label="Praegune mõttekäik" className="relative flex flex-1 flex-col justify-end py-8">
+      <section aria-live="polite" aria-label="Praegune mõttekäik" className="pointer-events-none relative flex flex-col justify-end py-8">
         {active && thread.length > 0 ? (
           <div className="max-w-4xl">
             <p className="flex items-center gap-3 text-xl font-bold" style={{ color: colorGlow[active.color] }}>
@@ -137,6 +115,40 @@ function FieldPage() {
           {speakers.map((s) => <VoiceEditor key={s.id} s={s} />)}
         </div>
       )}
+    </div>
+  );
+}
+
+function PresenceName({ s, p, fieldRef }: { s: Speaker; p: number; fieldRef: React.RefObject<HTMLDivElement | null> }) {
+  const drag = useRef(false);
+  const glow = colorGlow[s.color];
+  const active = p >= 1;
+  const move = (x: number, y: number) => actions.updateSpeaker(s.id, { x: Math.min(94, Math.max(6, x)), y: Math.min(60, Math.max(16, y)) });
+  return (
+    <div
+      role="button" tabIndex={0}
+      aria-label={`${s.name}, ${presenceWord(p)}`}
+      onKeyDown={(e) => {
+        const st = e.shiftKey ? 10 : 3;
+        const d = ({ ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, -st], ArrowDown: [0, st] } as Record<string, number[]>)[e.key];
+        if (d) { e.preventDefault(); move(s.x + d[0]!, s.y + d[1]!); }
+      }}
+      onPointerDown={(e) => { drag.current = true; e.currentTarget.setPointerCapture(e.pointerId); }}
+      onPointerMove={(e) => {
+        if (!drag.current || !fieldRef.current) return;
+        const r = fieldRef.current.getBoundingClientRect();
+        move(((e.clientX - r.left) / r.width) * 100, ((e.clientY - r.top) / r.height) * 100);
+      }}
+      onPointerUp={() => { if (drag.current) actions.log(`Hääle „${s.name}” kohta väljal muudeti.`); drag.current = false; }}
+      style={{ left: `${s.x}%`, top: `${s.y}%`, touchAction: "none" }}
+      className="absolute -translate-x-1/2 -translate-y-1/2 cursor-grab select-none rounded-md px-2 active:cursor-grabbing"
+    >
+      <span aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[50%] transition-all duration-[2400ms]"
+        style={{ width: `${14 + p * 22}rem`, height: `${5 + p * 7}rem`, background: `radial-gradient(closest-side, ${glow}, transparent)`, filter: "blur(36px)", opacity: 0.12 + p * 0.5 }} />
+      <span className="relative block whitespace-nowrap font-display font-bold transition-all duration-1000"
+        style={{ fontSize: `${1 + p * 1.1}rem`, opacity: 0.4 + p * 0.6, color: active ? glow : undefined }}>
+        {s.name}
+      </span>
     </div>
   );
 }
