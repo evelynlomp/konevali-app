@@ -96,7 +96,7 @@ function PresenceName({ s, p, fieldRef, lines, above }: { s: Speaker; p: number;
       <span aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[50%] transition-all duration-[2400ms]"
         style={{ width: `${14 + p * 22}rem`, height: `${5 + p * 7}rem`, background: `radial-gradient(closest-side, ${glow}, transparent)`, filter: "blur(36px)", opacity: 0.12 + p * 0.5 }} />
       <span className="relative block whitespace-nowrap font-display font-bold transition-all duration-1000"
-        style={{ fontSize: `${1 + p * 1.1}rem`, opacity: 0.4 + p * 0.6, color: active ? glow : undefined }}>
+        style={{ fontSize: `${1 + p * 0.45}rem`, opacity: 0.4 + p * 0.6, color: active ? glow : undefined }}>
         {s.name}
       </span>
       <ol aria-live={active ? "polite" : "off"} aria-label={`${s.name} ütles`}
