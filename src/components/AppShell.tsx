@@ -13,8 +13,8 @@ export function AppShell() {
   const { running, deleted } = useSession();
   useEffect(() => {
     const t = setInterval(() => actions.tick(), 4000);
-    actions.tick();
-    return () => clearInterval(t);
+    const first = setTimeout(() => actions.tick(), 1200);
+    return () => { clearInterval(t); clearTimeout(first); };
   }, []);
 
   return (
