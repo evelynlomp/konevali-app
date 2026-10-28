@@ -52,25 +52,26 @@
 
 :root {
   --radius: 0.5rem;
-  --background: oklch(0.972 0.008 95);
-  --foreground: oklch(0.24 0.03 230);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.24 0.03 230);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.24 0.03 230);
-  --primary: oklch(0.45 0.09 195);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.33 0.06 235);
-  --secondary-foreground: oklch(0.99 0 0);
-  --muted: oklch(0.94 0.012 95);
-  --muted-foreground: oklch(0.44 0.03 230);
-  --accent: oklch(0.93 0.035 190);
-  --accent-foreground: oklch(0.3 0.06 210);
-  --destructive: oklch(0.5 0.18 28);
-  --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.84 0.015 230);
-  --input: oklch(0.6 0.02 230);
-  --ring: oklch(0.62 0.13 175);
+  /* One continuous environment: the whole app lives in the Nordic night field */
+  --background: oklch(0.2 0.045 235);
+  --foreground: oklch(0.95 0.012 200);
+  --card: oklch(0.26 0.045 230 / 0.55);
+  --card-foreground: oklch(0.95 0.012 200);
+  --popover: oklch(0.24 0.045 232);
+  --popover-foreground: oklch(0.95 0.012 200);
+  --primary: oklch(0.84 0.12 185);
+  --primary-foreground: oklch(0.2 0.05 230);
+  --secondary: oklch(0.85 0.06 205);
+  --secondary-foreground: oklch(0.2 0.05 230);
+  --muted: oklch(0.3 0.04 230 / 0.6);
+  --muted-foreground: oklch(0.8 0.04 210);
+  --accent: oklch(0.34 0.06 200 / 0.7);
+  --accent-foreground: oklch(0.95 0.03 190);
+  --destructive: oklch(0.74 0.15 28);
+  --destructive-foreground: oklch(0.18 0.04 30);
+  --border: oklch(0.6 0.04 220 / 0.35);
+  --input: oklch(0.7 0.04 220 / 0.6);
+  --ring: oklch(0.86 0.13 180);
   /* The living field — deep Nordic night */
   --field: oklch(0.2 0.045 235);
   --field-foreground: oklch(0.96 0.01 200);
@@ -129,6 +130,30 @@
     radial-gradient(100% 80% at 85% 15%, oklch(0.28 0.06 265 / 0.5), transparent 55%),
     radial-gradient(140% 100% at 50% 110%, oklch(0.26 0.06 165 / 0.45), transparent 60%),
     var(--field);
+}
+
+/* A participant's presence: a soft current of mist, never an object */
+@utility presence-current {
+  position: absolute;
+  inset-inline: -10%;
+  height: 9rem;
+  border-radius: 50%;
+  filter: blur(42px);
+  transform-origin: center;
+  transition: opacity 2.4s ease, transform 2.4s ease;
+  animation: mist 18s ease-in-out infinite alternate;
+}
+@keyframes mist {
+  from { translate: -4% 0; }
+  to { translate: 4% -6px; }
+}
+
+@keyframes ripple {
+  from { transform: scale(0.6); opacity: 0.55; }
+  to { transform: scale(2.4); opacity: 0; }
+}
+@utility ripple {
+  animation: ripple 3.6s ease-out infinite;
 }
 
 @utility aurora-blob {

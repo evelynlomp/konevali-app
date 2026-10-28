@@ -1,175 +1,142 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useRef, useState } from "react";
-import { actions, COLOR_LABELS, useSession, type Speaker, type SpeakerColor } from "@/lib/session-store";
+import { useState } from "react";
+import { actions, COLOR_LABELS, useSession, type Speaker, type SpeakerColor, type Utterance } from "@/lib/session-store";
 import { colorGlow } from "@/components/AppShell";
 
 export const Route = createFileRoute("/vali")({
   head: () => ({
     meta: [
       { title: "Kõneväli – elav vestlusväli" },
-      { name: "description", content: "Vestlus nähtavana: kõnelejad valguspunktidena, vestluse voog ja subtiitrid reaalajas." },
+      { name: "description", content: "Vestlus nähtavana: kohalolu, tähelepanu ja mõttekäigud reaalajas subtiitritena." },
       { property: "og:title", content: "Kõneväli – elav vestlusväli" },
-      { property: "og:description", content: "Näe, kes räägib, ja kuidas vestlus liigub — pehme elav väli, mitte tabelid." },
+      { property: "og:description", content: "Näe, kes on vestluses kohal ja kuhu tähelepanu liigub." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: FieldPage,
 });
 
-function FieldPage() {
-  const { speakers, utterances, activeId, previousId, running, deleted } = useSession();
-  const [selected, setSelected] = useState<string | null>(null);
-  const fieldRef = useRef<HTMLDivElement>(null);
-  const lastBy = (id: string) => [...utterances].reverse().find((u) => u.speakerId === id);
-  const active = speakers.find((s) => s.id === activeId);
-  const prev = speakers.find((s) => s.id === previousId);
-  const sel = speakers.find((s) => s.id === selected);
+/** Presence 0..1: strongest when speaking, fading gently with each fragment since. */
+function presenceOf(id: string, utterances: Utterance[], activeId: string | null) {
+  if (id === activeId) return 1;
+  for (let i = utterances.length - 1, since = 0; i >= 0; i--, since++) {
+    if (utterances[i]!.speakerId === id) return Math.max(0.14, 0.8 - since * 0.08);
+  }
+  return 0.1;
+}
+const presenceWord = (p: number) => (p >= 1 ? "räägib praegu" : p > 0.5 ? "rääkis hiljuti" : p > 0.2 ? "vaikib" : "pole veel rääkinud");
 
-  // Curved trace from previous to active speaker
-  const trace = active && prev && active.id !== prev.id
-    ? (() => {
-        const mx = (prev.x + active.x) / 2;
-        const my = Math.min(prev.y, active.y) - 14;
-        return `M ${prev.x} ${prev.y} Q ${mx} ${my} ${active.x} ${active.y}`;
-      })()
-    : null;
+function FieldPage() {
+  const { speakers, utterances, activeId, running, deleted } = useSession();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const active = speakers.find((s) => s.id === activeId);
+  const last = utterances[utterances.length - 1];
+  const thread = last ? utterances.filter((u) => u.turn === last.turn) : [];
+  // gentle traces of earlier turns
+  const earlierTurns: Utterance[][] = [];
+  for (let i = utterances.length - 1; i >= 0 && earlierTurns.length < 3; i--) {
+    const u = utterances[i]!;
+    if (u.turn === last?.turn) continue;
+    const g = earlierTurns.find((t) => t[0]!.turn === u.turn);
+    if (g) g.unshift(u); else earlierTurns.push([u]);
+  }
+  const byId = (id: string) => speakers.find((s) => s.id === id)!;
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-3 no-print">
-        <div>
-          <h1 className="text-2xl font-bold">Kõneväli</h1>
-          <p className="text-sm text-muted-foreground">Vestlus on nähtav väljana. Lohista valguspunkte või liiguta neid nooleklahvidega.</p>
-        </div>
+    <div className="relative flex flex-1 flex-col">
+      <h1 className="sr-only">Kõneväli</h1>
+
+      {/* Presence currents — one soft mist band per voice, filling the whole field */}
+      <div aria-hidden className="pointer-events-none absolute -inset-x-4 -top-28 -bottom-8" style={{ maskImage: "radial-gradient(75% 70% at 50% 50%, black 40%, transparent 100%)", WebkitMaskImage: "radial-gradient(75% 70% at 50% 50%, black 40%, transparent 100%)" }}>
+        {speakers.map((s, i) => {
+          const p = presenceOf(s.id, utterances, activeId);
+          return (
+            <div key={s.id} className="presence-current"
+              style={{
+                top: `${8 + i * (80 / Math.max(1, speakers.length - 1))}%`,
+                background: `radial-gradient(60% 50% at ${30 + ((i * 23) % 40)}% 50%, ${colorGlow[s.color]}, transparent 70%)`,
+                opacity: p * 0.75,
+                transform: `translateY(-50%) scaleY(${0.5 + p})`,
+                animationDelay: `${-i * 5}s`,
+              }} />
+          );
+        })}
+      </div>
+
+      {/* Presence legend — calm, quiet labels; brightness follows presence */}
+      <ul aria-label="Kohalolu vestluses" className="relative flex flex-wrap gap-x-6 gap-y-2 pt-2">
+        {speakers.map((s) => {
+          const p = presenceOf(s.id, utterances, activeId);
+          return (
+            <li key={s.id} className="flex items-center gap-2 font-semibold transition-opacity duration-1000" style={{ opacity: 0.35 + p * 0.65 }}>
+              <span aria-hidden className="h-1 rounded-full transition-all duration-1000" style={{ width: `${0.75 + p * 2.5}rem`, background: colorGlow[s.color] }} />
+              <span className={p >= 1 ? "text-lg" : "text-sm"}>{s.name}</span>
+              <span className="sr-only">: {presenceWord(p)}</span>
+            </li>
+          );
+        })}
+      </ul>
+
+      {/* Earlier turns leave faint traces */}
+      <div className="relative mt-8 space-y-2" aria-label="Varasemad mõtted">
+        {earlierTurns.reverse().map((t, i, arr) => {
+          const s = byId(t[0]!.speakerId);
+          return (
+            <p key={t[0]!.turn} className="max-w-3xl truncate text-sm transition-opacity duration-1000" style={{ opacity: 0.25 + (i / Math.max(1, arr.length)) * 0.35 }}>
+              <span className="font-bold" style={{ color: colorGlow[s.color] }}>{s.name}</span>{" "}
+              <span className="text-muted-foreground">{t.map((u) => u.text).join(" ")}</span>
+            </p>
+          );
+        })}
+      </div>
+
+      {/* The current thought thread */}
+      <section aria-live="polite" aria-label="Praegune mõttekäik" className="relative flex flex-1 flex-col justify-end py-8">
+        {active && thread.length > 0 ? (
+          <div className="max-w-4xl">
+            <p className="flex items-center gap-3 text-xl font-bold" style={{ color: colorGlow[active.color] }}>
+              <span aria-hidden className="relative inline-flex size-4">
+                <span className="ripple absolute inset-0 rounded-full border-2" style={{ borderColor: colorGlow[active.color] }} />
+              </span>
+              {active.name}
+            </p>
+            <ol className="mt-4 border-l-2 pl-6" style={{ borderColor: `color-mix(in oklab, ${colorGlow[active.color]} 45%, transparent)` }}>
+              {thread.slice(-4).map((u, i, arr) => {
+                const current = i === arr.length - 1;
+                return (
+                  <li key={u.id} className={`caption-in relative py-2 transition-all duration-700 ${current ? "text-3xl font-semibold leading-snug sm:text-4xl" : "text-lg text-muted-foreground"}`}
+                    style={{ opacity: current ? 1 : 0.45 + (i / arr.length) * 0.4 }}>
+                    <span aria-hidden className="absolute -left-[1.95rem] top-1/2 h-0.5 w-4" style={{ background: colorGlow[active.color] }} />
+                    {u.text}
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        ) : (
+          <p className="text-2xl text-muted-foreground">{deleted ? "Väli on kustutatud." : "Väli ootab esimest häält…"}</p>
+        )}
+      </section>
+
+      {/* Quiet secondary controls */}
+      <div className="relative flex flex-wrap items-center gap-3 pb-2 no-print">
         {deleted ? (
           <button onClick={actions.restart} className="min-h-11 rounded-full bg-primary px-5 font-bold text-primary-foreground">Alusta uut seanssi</button>
         ) : (
-          <button onClick={actions.toggleRunning} aria-pressed={!running} className="min-h-11 rounded-full border-2 border-secondary px-5 font-bold text-secondary hover:bg-muted">
+          <button onClick={actions.toggleRunning} aria-pressed={!running} className="min-h-11 rounded-full border border-border px-5 font-semibold hover:bg-muted">
             {running ? "❚❚ Peata" : "▶ Jätka"}
           </button>
         )}
+        <button onClick={() => setSettingsOpen((o) => !o)} aria-expanded={settingsOpen} aria-controls="haalte-seaded" className="min-h-11 rounded-full border border-border px-5 font-semibold hover:bg-muted">
+          Häälte seaded
+        </button>
       </div>
-
-      {/* The living field — fills the screen */}
-      <div
-        ref={fieldRef}
-        className="aurora-field relative min-h-[32rem] w-full flex-1 overflow-hidden rounded-2xl lg:min-h-[70vh]"
-        role="application"
-        aria-label="Vestlusväli: kõnelejad valguspunktidena"
-      >
-        <div aria-hidden className="aurora-blob left-[5%] top-[8%] size-80" style={{ background: "var(--glow-teal)" }} />
-        <div aria-hidden className="aurora-blob right-[4%] top-[35%] size-96" style={{ background: "var(--glow-petrol)", animationDelay: "-9s" }} />
-        <div aria-hidden className="aurora-blob bottom-[5%] left-[35%] size-72" style={{ background: "var(--glow-forest)", animationDelay: "-17s" }} />
-
-        {trace && (
-          <svg aria-hidden className="pointer-events-none absolute inset-0 size-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <path d={trace} fill="none" stroke={colorGlow[active!.color]} strokeWidth="0.5" strokeLinecap="round" className="trace-flow" opacity="0.9" />
-          </svg>
-        )}
-
-        {speakers.map((s) => (
-          <Presence
-            key={s.id}
-            s={s}
-            active={s.id === activeId}
-            caption={lastBy(s.id)?.text}
-            fieldRef={fieldRef}
-            onSelect={() => setSelected(s.id)}
-            selected={s.id === selected}
-          />
-        ))}
-
-        {/* Current voice — large, calm, bottom of the field */}
-        <div aria-live="polite" className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-field/95 via-field/70 to-transparent px-6 pb-6 pt-16">
-          <p className="text-sm font-bold uppercase tracking-widest text-field-soft">Praegu kõlab</p>
-          {active ? (
-            <p key={lastBy(active.id)?.id} className="caption-in mt-1 max-w-4xl text-2xl font-semibold text-field-foreground sm:text-3xl">
-              <span style={{ color: colorGlow[active.color] }}>{active.name}:</span> {lastBy(active.id)?.text}
-            </p>
-          ) : (
-            <p className="mt-1 text-xl text-field-soft">{deleted ? "Väli on kustutatud." : "Väli ootab esimest häält…"}</p>
-          )}
+      {settingsOpen && (
+        <div id="haalte-seaded" className="relative grid gap-3 pb-4 sm:grid-cols-2 lg:grid-cols-4">
+          {speakers.map((s) => <VoiceEditor key={s.id} s={s} />)}
         </div>
-      </div>
-
-      {/* Secondary controls */}
-      <div className="grid gap-4 lg:grid-cols-[1fr_22rem] no-print">
-        <section aria-labelledby="osalejad">
-          <h2 id="osalejad" className="text-lg font-bold">Hääled väljal</h2>
-          <ul className="mt-2 flex flex-wrap gap-2">
-            {speakers.map((s) => (
-              <li key={s.id}>
-                <button
-                  onClick={() => setSelected(s.id)}
-                  aria-pressed={s.id === selected}
-                  className={`flex min-h-11 items-center gap-2 rounded-full border-2 bg-card px-4 font-semibold ${s.id === selected ? "border-secondary" : "border-border"}`}
-                >
-                  <span aria-hidden className="size-3 rounded-full" style={{ background: colorGlow[s.color] }} />
-                  {s.name}
-                  {s.id === activeId && <span className="text-xs font-bold text-live">● kõlab</span>}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-        {sel && <VoiceEditor key={sel.id} s={sel} />}
-      </div>
-    </div>
-  );
-}
-
-function Presence({ s, active, caption, fieldRef, onSelect, selected }: {
-  s: Speaker; active: boolean; caption?: string | undefined; fieldRef: React.RefObject<HTMLDivElement | null>; onSelect: () => void; selected: boolean;
-}) {
-  const drag = useRef(false);
-  const glow = colorGlow[s.color];
-  const move = (x: number, y: number) => actions.updateSpeaker(s.id, { x: Math.min(92, Math.max(8, x)), y: Math.min(88, Math.max(12, y)) });
-
-  return (
-    <div
-      role="group"
-      aria-label={`${s.name}${active ? ", räägib praegu" : ""}`}
-      tabIndex={0}
-      aria-describedby="vali-help"
-      onFocus={onSelect}
-      onKeyDown={(e) => {
-        const step = e.shiftKey ? 10 : 3;
-        const d = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key];
-        if (d) { e.preventDefault(); move(s.x + d[0]!, s.y + d[1]!); }
-      }}
-      onPointerDown={(e) => { drag.current = true; (e.target as HTMLElement).setPointerCapture(e.pointerId); onSelect(); }}
-      onPointerMove={(e) => {
-        if (!drag.current || !fieldRef.current) return;
-        const r = fieldRef.current.getBoundingClientRect();
-        move(((e.clientX - r.left) / r.width) * 100, ((e.clientY - r.top) / r.height) * 100);
-      }}
-      onPointerUp={() => { if (drag.current) actions.log(`Hääle „${s.name}” kohta väljal muudeti.`); drag.current = false; }}
-      style={{ left: `${s.x}%`, top: `${s.y}%`, touchAction: "none" }}
-      className="absolute -translate-x-1/2 -translate-y-1/2 cursor-grab select-none active:cursor-grabbing"
-    >
-      <div className="flex flex-col items-center gap-2">
-        {/* The orb of presence */}
-        <span
-          aria-hidden
-          className={`block rounded-full ${active ? "breathe" : ""} ${selected ? "ring-4 ring-field-foreground/70" : ""}`}
-          style={{
-            width: active ? "4.5rem" : "3rem",
-            height: active ? "4.5rem" : "3rem",
-            background: `radial-gradient(circle at 35% 35%, ${glow}, transparent 70%)`,
-            boxShadow: `0 0 ${active ? "3.5rem" : "1.75rem"} ${glow}`,
-            opacity: active ? 1 : 0.75,
-            transition: "width .4s, height .4s, box-shadow .4s, opacity .4s",
-          }}
-        />
-        <span className={`rounded-full px-3 py-0.5 font-bold text-field-foreground ${active ? "text-lg" : "text-sm"} bg-field/60 backdrop-blur-sm`}>
-          {s.name}
-        </span>
-        {caption && (
-          <span key={caption} className={`caption-in max-w-56 rounded-xl bg-field/60 px-3 py-1.5 text-center text-sm text-field-soft backdrop-blur-sm ${active ? "text-base text-field-foreground" : ""}`}>
-            „{caption}”
-          </span>
-        )}
-      </div>
-      <span id="vali-help" className="sr-only">Liiguta nooleklahvidega, Shift-klahviga suurem samm.</span>
+      )}
     </div>
   );
 }
@@ -177,26 +144,25 @@ function Presence({ s, active, caption, fieldRef, onSelect, selected }: {
 function VoiceEditor({ s }: { s: Speaker }) {
   const [name, setName] = useState(s.name);
   const [err, setErr] = useState("");
+  const id = `nimi-${s.id}`;
   return (
-    <form className="space-y-3 rounded-xl border border-border bg-card p-4"
+    <form className="space-y-2 rounded-xl border border-border bg-card p-3 backdrop-blur"
       onSubmit={(e) => { e.preventDefault(); if (!name.trim()) return setErr("Nimi ei tohi olla tühi."); setErr(""); actions.rename(s.id, name); }}>
-      <h3 className="font-bold">Hääle seaded: {s.name}</h3>
-      <div>
-        <label htmlFor="nimi" className="block text-sm font-bold">Nimi</label>
-        <div className="flex gap-2">
-          <input id="nimi" value={name} onChange={(e) => setName(e.target.value)} aria-invalid={!!err} aria-describedby={err ? "nimi-viga" : undefined}
-            className="min-h-11 flex-1 rounded-md border-2 border-input bg-background px-3" />
-          <button className="min-h-11 rounded-md bg-primary px-4 font-bold text-primary-foreground">Salvesta</button>
-        </div>
-        {err && <p id="nimi-viga" role="alert" className="mt-1 font-bold text-destructive">⚠ {err}</p>}
+      <label htmlFor={id} className="block text-sm font-bold">Nimi</label>
+      <div className="flex gap-2">
+        <input id={id} value={name} onChange={(e) => setName(e.target.value)} aria-invalid={!!err}
+          className="min-h-11 min-w-0 flex-1 rounded-md border border-input bg-background/60 px-3" />
+        <button className="min-h-11 rounded-md bg-primary px-3 font-bold text-primary-foreground">Salvesta</button>
       </div>
+      {err && <p role="alert" className="font-bold text-destructive">⚠ {err}</p>}
       <fieldset>
-        <legend className="text-sm font-bold">Värv</legend>
-        <div className="mt-1 flex flex-wrap gap-2">
+        <legend className="sr-only">Värv</legend>
+        <div className="flex flex-wrap gap-1">
           {(Object.keys(COLOR_LABELS) as SpeakerColor[]).map((c) => (
-            <label key={c} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full border-2 border-border px-3 text-sm has-checked:border-secondary has-checked:font-bold">
-              <input type="radio" name="varv" className="sr-only" checked={s.color === c} onChange={() => actions.updateSpeaker(s.id, { color: c })} />
-              <span aria-hidden className="size-3 shrink-0 rounded-full" style={{ background: colorGlow[c] }} />{COLOR_LABELS[c]}
+            <label key={c} title={COLOR_LABELS[c]} className="flex size-11 cursor-pointer items-center justify-center rounded-full border-2 border-transparent has-checked:border-foreground">
+              <input type="radio" name={`varv-${s.id}`} className="sr-only" checked={s.color === c} onChange={() => actions.updateSpeaker(s.id, { color: c })} />
+              <span aria-hidden className="size-5 rounded-full" style={{ background: colorGlow[c] }} />
+              <span className="sr-only">{COLOR_LABELS[c]}</span>
             </label>
           ))}
         </div>

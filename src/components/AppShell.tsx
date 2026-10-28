@@ -19,13 +19,18 @@ export function AppShell() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="relative min-h-screen flex flex-col overflow-x-clip aurora-field">
+      <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="aurora-blob left-[5%] top-[5%] size-[28rem]" style={{ background: "var(--glow-teal)", opacity: 0.18 }} />
+        <div className="aurora-blob right-[0%] top-[40%] size-[32rem]" style={{ background: "var(--glow-petrol)", opacity: 0.16, animationDelay: "-9s" }} />
+        <div className="aurora-blob bottom-[0%] left-[30%] size-[26rem]" style={{ background: "var(--glow-forest)", opacity: 0.14, animationDelay: "-17s" }} />
+      </div>
       <a href="#sisu" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 bg-card px-4 py-2 font-bold">
         Liigu põhisisu juurde
       </a>
-      <header className="border-b border-border bg-background/80 backdrop-blur no-print">
+      <header className="relative no-print">
         <div className="mx-auto max-w-7xl px-4 py-3 flex flex-wrap items-center gap-x-8 gap-y-3">
-          <Link to="/" className="font-display text-2xl font-bold tracking-tight text-secondary">
+          <Link to="/" className="font-display text-2xl font-bold tracking-tight text-foreground">
             Kõne<span className="font-normal text-primary">väli</span>
           </Link>
           <nav aria-label="Põhinavigatsioon" className="flex-1">
@@ -50,10 +55,10 @@ export function AppShell() {
           </p>
         </div>
       </header>
-      <main id="sisu" className="flex-1 mx-auto w-full max-w-7xl px-4 py-6 flex flex-col">
+      <main id="sisu" className="relative flex-1 mx-auto w-full max-w-7xl px-4 py-6 flex flex-col">
         <Outlet />
       </main>
-      <footer className="border-t border-border py-4 text-center text-sm text-muted-foreground no-print">
+      <footer className="relative py-4 text-center text-sm text-muted-foreground no-print">
         Kõneväli teeb vestluse nähtavaks, et kõik saaksid võrdselt osaleda. Tehisaru abistab — inimene kontrollib.
       </footer>
     </div>

@@ -27,6 +27,7 @@ export interface Utterance {
   speakerId: string;
   time: string;
   text: string;
+  turn: string; // fragments of one speaking turn share this id
 }
 
 export interface AuditEntry {
@@ -52,18 +53,30 @@ const initialSpeakers: Speaker[] = [
   { id: "s4", name: "Kõneleja 4", color: "amber", x: 24, y: 72, large: false, pinned: false, nameSource: "tuvastatud" },
 ];
 
-export const SCRIPT: [string, string][] = [
-  ["s1", "Tere tulemast kõigile. Alustame eelarve aruteluga."],
-  ["s2", "Aitäh. Tallinna kontori kulud on sel kvartalil kasvanud."],
-  ["s3", "Mul on küsimus. Kas see sisaldab ka Tartu koolitusi?"],
-  ["s2", "Jah, sisaldab. Töötukassa koostööprojekt on seal samuti sees."],
-  ["s4", "Ma võin koostada täpsema ülevaate järgmiseks reedeks."],
-  ["s1", "Väga hea. Kas saame liikuda järgmise teema juurde?"],
-  ["s2", "Jah, jätkame."],
-  ["s3", "Ettepanek: lisame igale koosolekule subtiitrid vaikimisi."],
-  ["s1", "Olen nõus. Otsustame, et alates novembrist teeme nii."],
-  ["s4", "Panen selle protokolli kirja."],
+// Speaking turns: long contributions are broken into thought units (fragments)
+const TURNS: [string, string[]][] = [
+  ["s1", ["Tere tulemast kõigile.", "Alustame eelarve aruteluga."]],
+  ["s2", [
+    "Esiteks: Tallinna kontori kulud on sel kvartalil kasvanud umbes kaheksa protsenti.",
+    "Teiseks: suurem osa kasvust tuleb koolitustest, mitte ruumidest.",
+    "Peamine ettepanek on koondada koolitused ühte kohta, et kulud oleksid ülevaatlikumad.",
+    "Me peaksime otsustama, kas Töötukassa koostööprojekt jääb samasse eelarvesse.",
+  ]],
+  ["s3", ["Mul on küsimus.", "Kas see sisaldab ka Tartu koolitusi?"]],
+  ["s2", ["Jah, sisaldab.", "Töötukassa projekt on seal samuti sees."]],
+  ["s4", ["Ma võin koostada täpsema ülevaate järgmiseks reedeks."]],
+  ["s3", [
+    "Tahaksin lisada ühe mõtte ligipääsetavuse kohta.",
+    "Praegu jääb osa inimesi koosolekutel kõrvale, sest nad ei kuule kõike.",
+    "Ettepanek: lisame igale koosolekule subtiitrid vaikimisi.",
+    "Nii saab igaüks arutelus päriselt osaleda.",
+  ]],
+  ["s1", ["Olen nõus.", "Otsustame, et alates novembrist teeme nii."]],
+  ["s4", ["Panen selle protokolli kirja."]],
 ];
+export const SCRIPT: [string, string, number][] = TURNS.flatMap(([sp, frags], turn) =>
+  frags.map((f) => [sp, f, turn] as [string, string, number]),
+);
 
 const now = () => new Date().toLocaleTimeString("et-EE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
@@ -96,10 +109,11 @@ let scriptIndex = 0;
 export const actions = {
   tick() {
     if (!state.running || state.deleted) return;
-    const [speakerId, text] = SCRIPT[scriptIndex % SCRIPT.length]!;
+    const [speakerId, text, turnNo] = SCRIPT[scriptIndex % SCRIPT.length]!;
+    const round = Math.floor(scriptIndex / SCRIPT.length);
     scriptIndex++;
     set({
-      utterances: [...state.utterances, { id: crypto.randomUUID(), speakerId, text, time: now() }],
+      utterances: [...state.utterances, { id: crypto.randomUUID(), speakerId, text, time: now(), turn: `${round}-${turnNo}` }],
       previousId: state.activeId,
       activeId: speakerId,
     });
