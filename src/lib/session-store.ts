@@ -163,6 +163,10 @@ export const actions = {
     const { [id]: _removed, ...lastSpokeAt } = state.lastSpokeAt;
     set({ speakers: state.speakers.filter((x) => x.id !== id), lastSpokeAt, activeId: state.activeId === id ? null : state.activeId, ...log(`Osaleja „${s.name}” eemaldati väljalt.`) });
   },
+  /** Empties the field for a source that brings its own speakers (a replay); no audit entries. */
+  clearSpeakers() {
+    set({ speakers: [], utterances: [], lastSpokeAt: {}, activeId: null, previousId: null });
+  },
   merge(fromId: string, intoId: string) {
     const a = state.speakers.find((x) => x.id === fromId), b = state.speakers.find((x) => x.id === intoId);
     if (!a || !b || a.id === b.id) return;

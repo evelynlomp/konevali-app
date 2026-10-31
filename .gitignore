@@ -30,3 +30,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Replays made from real recordings contain what people said; only the hand-written sample is tracked
+public/replay/*
+!public/replay/sample.json

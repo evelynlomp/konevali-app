@@ -1,7 +1,7 @@
 import { Link, Outlet } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
 import { actions, useSession } from "@/lib/session-store";
-import { createSpeechSource } from "@/lib/speech";
+import { createSpeechSource, replayName } from "@/lib/speech";
 
 const NAV = [
   { to: "/", label: "Avaleht" },
@@ -16,6 +16,10 @@ export function AppShell() {
   // A new session gets a fresh source; pausing only stops it, so it resumes in place.
   // eslint-disable-next-line react-hooks/exhaustive-deps -- sessionId is the intentional reset trigger
   const source = useMemo(() => createSpeechSource(), [sessionId]);
+  // A replay brings its own speakers, so the demo's starting four must not stay on the field.
+  useEffect(() => {
+    if (replayName()) actions.clearSpeakers();
+  }, []);
   useEffect(() => source.subscribe(actions.ingest), [source]);
   useEffect(() => {
     if (!running || deleted) return;

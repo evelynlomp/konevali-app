@@ -92,3 +92,23 @@ describe("actions.ingest", () => {
     expect(result.current.utterances).toHaveLength(before);
   });
 });
+
+describe("actions.clearSpeakers", () => {
+  it("empties the field so a source can bring its own speakers", () => {
+    const { result } = renderHook(() => useSession());
+    act(() => actions.restart()); // earlier tests may have paused the session
+    act(() => actions.ingest({ speakerId: "s1", speakerName: "Mari", text: "Tere", timestamp: Date.now(), isFinal: true }));
+    expect(result.current.speakers.length).toBeGreaterThan(0);
+    expect(result.current.utterances.length).toBeGreaterThan(0);
+
+    act(() => actions.clearSpeakers());
+    expect(result.current.speakers).toEqual([]);
+    expect(result.current.utterances).toEqual([]);
+    expect(result.current.lastSpokeAt).toEqual({});
+    expect(result.current.activeId).toBeNull();
+
+    act(() => actions.ingest({ speakerId: "A", speakerName: "Mari", text: "Tere", timestamp: Date.now(), isFinal: true }));
+    expect(result.current.speakers.map((s) => s.id)).toEqual(["A"]);
+    expect(result.current.speakers[0]!.name).toBe("Mari");
+  });
+});

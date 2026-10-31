@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "audio": "sample (hand-written, no audio)",
+  "names": { "A": "Mari", "B": "Jaan", "C": "Evelyn" },
+  "events": [
+    { "t": 4000, "speaker": "A", "text": "Tere tulemast kõigile." },
+    { "t": 8500, "speaker": "A", "text": "Alustame eelarve aruteluga." },
+    { "t": 17000, "speaker": "B", "text": "Esiteks: kontori kulud on sel kvartalil kasvanud umbes kaheksa protsenti." },
+    { "t": 22500, "speaker": "B", "text": "Suurem osa kasvust tuleb koolitustest, mitte ruumidest." },
+    { "t": 29000, "speaker": "A", "text": "Kas see sisaldab ka Tartu koolitusi?" },
+    { "t": 34000, "speaker": "B", "text": "Jah, sisaldab. Töötukassa projekt on seal samuti sees." },
+    { "t": 42000, "speaker": "C", "text": "Tahaksin lisada ühe mõtte ligipääsetavuse kohta." },
+    { "t": 48500, "speaker": "C", "text": "Praegu jääb osa inimesi koosolekutel kõrvale, sest nad ei kuule kõike." },
+    { "t": 55000, "speaker": "C", "text": "Ettepanek: lisame igale koosolekule subtiitrid vaikimisi." },
+    { "t": 61000, "speaker": "A", "text": "Olen nõus." },
+    { "t": 66000, "speaker": "A", "text": "Otsustame, et alates novembrist teeme nii." },
+    { "t": 74000, "speaker": "B", "text": "Panen selle protokolli kirja." },
+    { "t": 84000, "speaker": "A", "text": "Kas on veel midagi, mida tahaksite lisada?" },
+    { "t": 93000, "speaker": "B", "text": "Mul on üks küsimus eelarve kohta." },
+    { "t": 101000, "speaker": "A", "text": "Palun, räägi." },
+    { "t": 109000, "speaker": "B", "text": "Kas eelarve sisaldab ka koolituste kulusid?" },
+    { "t": 128000, "speaker": "C", "text": "Mul on lühike täiendus." },
+    { "t": 134000, "speaker": "C", "text": "Alates novembrist peaksid subtiitrid olema vaikimisi sees." }
+  ]
+}
