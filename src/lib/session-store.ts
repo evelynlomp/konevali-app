@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import type { SpeechEvent } from "./speech";
 
 export type SpeakerColor = "teal" | "petrol" | "forest" | "amber" | "sky" | "coral";
 
@@ -44,6 +45,8 @@ interface State {
   running: boolean;
   audit: AuditEntry[];
   deleted: boolean;
+  /** Bumped on restart so the app can attach a fresh speech source. */
+  sessionId: number;
 }
 
 const initialSpeakers: Speaker[] = [
@@ -52,33 +55,6 @@ const initialSpeakers: Speaker[] = [
   { id: "s3", name: "Evelyn", color: "coral", x: 84, y: 40, large: false, pinned: false, nameSource: "tuvastatud" },
   { id: "s4", name: "Kõneleja 4", color: "amber", x: 50, y: 66, large: false, pinned: false, nameSource: "tuvastatud" },
 ];
-
-// Speaking turns: long contributions are broken into thought units (fragments)
-const TURNS: [string, string[]][] = [
-  ["s1", ["Tere tulemast kõigile.", "Alustame eelarve aruteluga."]],
-  ["s2", [
-    "Esiteks: Tallinna kontori kulud on sel kvartalil kasvanud umbes kaheksa protsenti.",
-    "Teiseks: suurem osa kasvust tuleb koolitustest, mitte ruumidest.",
-    "Peamine ettepanek on koondada koolitused ühte kohta, et kulud oleksid ülevaatlikumad.",
-    "Me peaksime otsustama, kas Töötukassa koostööprojekt jääb samasse eelarvesse.",
-  ]],
-  ["s3", ["Mul on küsimus.", "Kas see sisaldab ka Tartu koolitusi?"]],
-  ["s2", ["Jah, sisaldab.", "Töötukassa projekt on seal samuti sees."]],
-  ["s4", ["Ma võin koostada täpsema ülevaate järgmiseks reedeks."]],
-  ["s3", [
-    "Tahaksin lisada ühe mõtte ligipääsetavuse kohta.",
-    "Praegu jääb osa inimesi koosolekutel kõrvale, sest nad ei kuule kõike.",
-    "Ettepanek: lisame igale koosolekule subtiitrid vaikimisi.",
-    "Nii saab igaüks arutelus päriselt osaleda.",
-  ]],
-  ["s1", ["Olen nõus.", "Otsustame, et alates novembrist teeme nii."]],
-  ["s4", ["Panen selle protokolli kirja."]],
-  ["s5", ["Vabandust, et hilinesin.", "Kas saaksin lühidalt lisada midagi Tartu kohta?"]],
-  ["s1", ["Muidugi, palun."]],
-];
-export const SCRIPT: [string, string, number][] = TURNS.flatMap(([sp, frags], turn) =>
-  frags.map((f) => [sp, f, turn] as [string, string, number]),
-);
 
 /** Order defines automatic assignment; colour is never the only cue. */
 export const PALETTE: SpeakerColor[] = ["teal", "amber", "sky", "coral", "forest", "petrol"];
@@ -98,7 +74,8 @@ export function freeSpot(list: Speaker[]): { x: number; y: number } {
   return best;
 }
 
-const now = () => new Date().toLocaleTimeString("et-EE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+const formatTime = (ms: number) => new Date(ms).toLocaleTimeString("et-EE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+const now = () => formatTime(Date.now());
 
 const initialState: State = {
   speakers: initialSpeakers,
@@ -108,6 +85,7 @@ const initialState: State = {
   running: true,
   audit: [{ id: "a0", time: "—", text: "Seanss alustati. Osalejaid teavitati salvestamisest." }],
   deleted: false,
+  sessionId: 0,
 };
 let state: State = initialState;
 const listeners = new Set<() => void>();
@@ -125,16 +103,21 @@ export function useSession() {
   );
 }
 
-let scriptIndex = 0;
 export const actions = {
-  tick() {
+  /** Single entry point for speech, whatever its source. */
+  ingest(event: SpeechEvent) {
     if (!state.running || state.deleted) return;
-    const [speakerId, text, turnNo] = SCRIPT[scriptIndex % SCRIPT.length]!;
-    const round = Math.floor(scriptIndex / SCRIPT.length);
-    scriptIndex++;
-    if (!state.speakers.some((s) => s.id === speakerId)) actions.addSpeaker(undefined, speakerId, true);
+    // Interim hypotheses are not shown yet; only settled text reaches the field.
+    if (!event.isFinal) return;
+    const { speakerId, speakerName, text, timestamp } = event;
+    // The name only seeds a new speaker; later renames by the user always win.
+    if (!state.speakers.some((s) => s.id === speakerId)) actions.addSpeaker(speakerName, speakerId, true);
+    const last = state.utterances[state.utterances.length - 1];
     set({
-      utterances: [...state.utterances, { id: crypto.randomUUID(), speakerId, text, time: now(), turn: `${round}-${turnNo}` }],
+      utterances: [
+        ...state.utterances,
+        { id: crypto.randomUUID(), speakerId, text, time: formatTime(timestamp), turn: last?.speakerId === speakerId ? last.turn : crypto.randomUUID() },
+      ],
       previousId: state.activeId,
       activeId: speakerId,
     });
@@ -160,8 +143,7 @@ export const actions = {
     set({ utterances: [], activeId: null, previousId: null, deleted: true, running: false, ...log("Transkript kustutati kasutaja soovil.") });
   },
   restart() {
-    scriptIndex = 0;
-    set({ deleted: false, running: true, ...log("Uus seanss alustati.") });
+    set({ deleted: false, running: true, sessionId: state.sessionId + 1, ...log("Uus seanss alustati.") });
   },
   addSpeaker(name?: string, id: string = crypto.randomUUID(), detected = false) {
     const n = name?.trim() || `Kõneleja ${state.speakers.length + 1}`;

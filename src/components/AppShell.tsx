@@ -1,6 +1,7 @@
 import { Link, Outlet } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { actions, useSession } from "@/lib/session-store";
+import { createSpeechSource } from "@/lib/speech";
 
 const NAV = [
   { to: "/", label: "Avaleht" },
@@ -11,12 +12,16 @@ const NAV = [
 ] as const;
 
 export function AppShell() {
-  const { running, deleted } = useSession();
+  const { running, deleted, sessionId } = useSession();
+  // A new session gets a fresh source; pausing only stops it, so it resumes in place.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- sessionId is the intentional reset trigger
+  const source = useMemo(() => createSpeechSource(), [sessionId]);
+  useEffect(() => source.subscribe(actions.ingest), [source]);
   useEffect(() => {
-    const t = setInterval(() => actions.tick(), 4000);
-    const first = setTimeout(() => actions.tick(), 1200);
-    return () => { clearInterval(t); clearTimeout(first); };
-  }, []);
+    if (!running || deleted) return;
+    source.start();
+    return () => source.stop();
+  }, [source, running, deleted]);
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-x-clip aurora-field">
