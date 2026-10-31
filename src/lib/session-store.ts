@@ -27,6 +27,8 @@ export interface Utterance {
   id: string;
   speakerId: string;
   time: string;
+  /** When the app received it (ms). Drives fading, so it never depends on the source's clock. */
+  at: number;
   text: string;
   turn: string; // fragments of one speaking turn share this id
 }
@@ -47,6 +49,8 @@ interface State {
   deleted: boolean;
   /** Bumped on restart so the app can attach a fresh speech source. */
   sessionId: number;
+  /** speakerId → arrival time of their latest sentence; absent = has not spoken. */
+  lastSpokeAt: Record<string, number>;
 }
 
 const initialSpeakers: Speaker[] = [
@@ -86,6 +90,7 @@ const initialState: State = {
   audit: [{ id: "a0", time: "—", text: "Seanss alustati. Osalejaid teavitati salvestamisest." }],
   deleted: false,
   sessionId: 0,
+  lastSpokeAt: {},
 };
 let state: State = initialState;
 const listeners = new Set<() => void>();
@@ -113,11 +118,13 @@ export const actions = {
     // The name only seeds a new speaker; later renames by the user always win.
     if (!state.speakers.some((s) => s.id === speakerId)) actions.addSpeaker(speakerName, speakerId, true);
     const last = state.utterances[state.utterances.length - 1];
+    const at = Date.now();
     set({
       utterances: [
         ...state.utterances,
-        { id: crypto.randomUUID(), speakerId, text, time: formatTime(timestamp), turn: last?.speakerId === speakerId ? last.turn : crypto.randomUUID() },
+        { id: crypto.randomUUID(), speakerId, text, time: formatTime(timestamp), at, turn: last?.speakerId === speakerId ? last.turn : crypto.randomUUID() },
       ],
+      lastSpokeAt: { ...state.lastSpokeAt, [speakerId]: at },
       previousId: state.activeId,
       activeId: speakerId,
     });
@@ -140,7 +147,7 @@ export const actions = {
     set({ utterances: state.utterances.map((u) => (u.id === id ? { ...u, text } : u)), ...log("Transkripti lõiku muudeti käsitsi.") });
   },
   deleteTranscript() {
-    set({ utterances: [], activeId: null, previousId: null, deleted: true, running: false, ...log("Transkript kustutati kasutaja soovil.") });
+    set({ utterances: [], lastSpokeAt: {}, activeId: null, previousId: null, deleted: true, running: false, ...log("Transkript kustutati kasutaja soovil.") });
   },
   restart() {
     set({ deleted: false, running: true, sessionId: state.sessionId + 1, ...log("Uus seanss alustati.") });
@@ -153,13 +160,17 @@ export const actions = {
   removeSpeaker(id: string) {
     const s = state.speakers.find((x) => x.id === id);
     if (!s) return;
-    set({ speakers: state.speakers.filter((x) => x.id !== id), activeId: state.activeId === id ? null : state.activeId, ...log(`Osaleja „${s.name}” eemaldati väljalt.`) });
+    const { [id]: _removed, ...lastSpokeAt } = state.lastSpokeAt;
+    set({ speakers: state.speakers.filter((x) => x.id !== id), lastSpokeAt, activeId: state.activeId === id ? null : state.activeId, ...log(`Osaleja „${s.name}” eemaldati väljalt.`) });
   },
   merge(fromId: string, intoId: string) {
     const a = state.speakers.find((x) => x.id === fromId), b = state.speakers.find((x) => x.id === intoId);
     if (!a || !b || a.id === b.id) return;
+    const { [fromId]: fromAt, ...lastSpokeAt } = state.lastSpokeAt;
+    if (fromAt !== undefined) lastSpokeAt[intoId] = Math.max(fromAt, lastSpokeAt[intoId] ?? 0);
     set({
       speakers: state.speakers.filter((x) => x.id !== fromId),
+      lastSpokeAt,
       utterances: state.utterances.map((u) => (u.speakerId === fromId ? { ...u, speakerId: intoId } : u)),
       activeId: state.activeId === fromId ? intoId : state.activeId,
       ...log(`Kõneleja „${a.name}” liideti kõnelejaga „${b.name}”.`),
