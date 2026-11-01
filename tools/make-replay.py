@@ -157,6 +157,11 @@ class SentenceBuilder:
             if self._ends_sentence(text, following) or self._too_long(text, following, tokens, i):
                 self.flush()
 
+    def flush_if_idle(self, now_s: float) -> None:
+        """Live use: end the sentence being built when nothing has been said for `break_s` (offline, the next chunk tells)."""
+        if self._pending and now_s - self._pending[-1][1] >= self.break_s:
+            self.flush()
+
     def flush(self) -> None:
         """End the sentence being built (if any) and add it as an event."""
         pending, self._pending = self._pending, []
