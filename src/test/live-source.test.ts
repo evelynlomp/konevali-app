@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createSpeechSource, liveRequested, type SpeechEvent } from "@/lib/speech";
 import { DemoSpeechSource } from "@/lib/speech/demo-source";
 import { LiveSpeechSource, parseLiveMessage } from "@/lib/speech/live-source";
+import type { SourceProblem } from "@/lib/speech";
 import type { AudioCapture } from "@/lib/speech/mic-capture";
 import { Resampler } from "@/lib/speech/pcm";
 
@@ -12,8 +13,9 @@ class FakeSocket {
   readyState = 0;
   binaryType = "";
   sent: unknown[] = [];
+  onopen: (() => void) | null = null;
   onmessage: ((e: { data: unknown }) => void) | null = null;
-  onclose: (() => void) | null = null;
+  onclose: ((e: { code?: number }) => void) | null = null;
   onerror: (() => void) | null = null;
   closed = false;
   constructor(public url: string) {
@@ -158,6 +160,35 @@ describe("LiveSpeechSource", () => {
     expect(FakeSocket.instances).toHaveLength(2);
   });
 
+  it("sends the access key first, then the audio", () => {
+    const source = new LiveSpeechSource("ws://x", capture, "secret");
+    source.start();
+    const socket = FakeSocket.instances[0]!;
+    socket.open();
+    socket.onopen?.();
+    const pcm = new Int16Array([1, 2]);
+    capture.push(pcm);
+    expect(socket.sent).toEqual([JSON.stringify({ type: "hello", key: "secret" }), pcm]);
+  });
+
+  it("sends the access key before the first audio even when no open event was seen", () => {
+    const source = new LiveSpeechSource("ws://x", capture, "secret");
+    source.start();
+    const socket = FakeSocket.instances[0]!;
+    socket.open();
+    capture.push(new Int16Array([1]));
+    expect(socket.sent[0]).toBe(JSON.stringify({ type: "hello", key: "secret" }));
+  });
+
+  it("sends no hello without a key", () => {
+    const source = new LiveSpeechSource("ws://x", capture);
+    source.start();
+    const socket = FakeSocket.instances[0]!;
+    socket.open();
+    socket.onopen?.();
+    expect(socket.sent).toEqual([]);
+  });
+
   it("stops listening for events after unsubscribe", () => {
     const source = new LiveSpeechSource("ws://x", capture);
     const seen: SpeechEvent[] = [];
@@ -166,6 +197,90 @@ describe("LiveSpeechSource", () => {
     off();
     FakeSocket.instances[0]!.onmessage?.({ data: final("A", "x") });
     expect(seen).toEqual([]);
+  });
+});
+
+describe("LiveSpeechSource problems", () => {
+  let capture: FakeCapture;
+  let problems: (SourceProblem | null)[];
+  let source: LiveSpeechSource;
+
+  beforeEach(() => {
+    FakeSocket.instances = [];
+    capture = new FakeCapture();
+    problems = [];
+    vi.stubGlobal("WebSocket", FakeSocket);
+    source = new LiveSpeechSource("ws://x", capture);
+    source.subscribeProblems((p) => problems.push(p));
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("reports a refused microphone and closes the connection", async () => {
+    capture.fail = new Error("denied");
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    source.start();
+    await vi.waitFor(() => expect(problems).toEqual(["mic"]));
+    expect(FakeSocket.instances[0]!.closed).toBe(true);
+  });
+
+  it("reports a server that cannot be reached", () => {
+    source.start();
+    FakeSocket.instances[0]!.onerror?.();
+    expect(problems).toEqual(["unreachable"]);
+  });
+
+  it("reports a lost connection and lets go of the microphone", () => {
+    source.start();
+    const socket = FakeSocket.instances[0]!;
+    socket.open();
+    socket.onopen?.();
+    const stopsBefore = capture.stops;
+    socket.onclose?.({ code: 1006 });
+    expect(problems).toEqual(["connection"]);
+    expect(capture.stops).toBeGreaterThan(stopsBefore);
+  });
+
+  it("tells a wrong key and a full server apart from a lost connection", () => {
+    source.start();
+    const first = FakeSocket.instances[0]!;
+    first.open();
+    first.onopen?.();
+    first.onclose?.({ code: 4401 });
+    source.retry();
+    const second = FakeSocket.instances[1]!;
+    second.open();
+    second.onopen?.();
+    second.onclose?.({ code: 1013 });
+    expect(problems).toEqual(["refused", null, "busy"]);
+  });
+
+  it("starts over on retry and clears the problem when stopped", () => {
+    source.start();
+    FakeSocket.instances[0]!.onerror?.();
+    source.retry();
+    expect(FakeSocket.instances).toHaveLength(2);
+    expect(problems).toEqual(["unreachable", null]);
+    source.stop();
+    expect(problems).toEqual(["unreachable", null]);
+  });
+
+  it("reports a microphone that only delivers silence, and clears it when sound returns", () => {
+    source.start();
+    const socket = FakeSocket.instances[0]!;
+    socket.open();
+    for (let i = 0; i < 29; i++) capture.push(new Int16Array(1600));
+    expect(problems).toEqual([]);
+    capture.push(new Int16Array(1600));
+    expect(problems).toEqual(["no-audio"]);
+    capture.push(new Int16Array([0, 0, 5]));
+    expect(problems).toEqual(["no-audio", null]);
+  });
+
+  it("does not call a quiet but live microphone silent", () => {
+    source.start();
+    FakeSocket.instances[0]!.open();
+    for (let i = 0; i < 100; i++) capture.push(Int16Array.from({ length: 1600 }, (_, k) => (k === 0 ? 1 : 0)));
+    expect(problems).toEqual([]);
   });
 });
 
@@ -178,6 +293,14 @@ describe("createSpeechSource with ?live", () => {
     window.history.pushState({}, "", "/vali?live");
     expect(liveRequested()).toBe(true);
     expect(createSpeechSource()).toBeInstanceOf(LiveSpeechSource);
+  });
+
+  it("takes the access key from the address fragment only", () => {
+    window.history.pushState({}, "", "/vali?live&key=nope#key=abc123");
+    const source = createSpeechSource() as unknown as { key?: string };
+    expect(source.key).toBe("abc123");
+    window.history.pushState({}, "", "/vali?live&key=nope");
+    expect((createSpeechSource() as unknown as { key?: string }).key).toBeUndefined();
   });
 
   it("never takes the server address from the address bar", () => {

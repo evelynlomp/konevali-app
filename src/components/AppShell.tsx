@@ -1,31 +1,55 @@
-import { Link, Outlet } from "@tanstack/react-router";
-import { useEffect, useMemo } from "react";
+import { Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import { actions, useSession } from "@/lib/session-store";
-import { createSpeechSource, liveRequested, replayName } from "@/lib/speech";
+import { createSpeechSource, sourceMode, type SourceProblem } from "@/lib/speech";
+import { SpeechSourceContext } from "@/lib/speech/use-names";
 
 const NAV = [
   { to: "/", label: "Avaleht" },
   { to: "/vali", label: "Kõneväli" },
   { to: "/transkript", label: "Transkript" },
-  { to: "/ulevaade", label: "Kokkuvõte" },
   { to: "/privaatsus", label: "Privaatsus" },
 ] as const;
 
+/** Said plainly and only when something is wrong; nothing is shown while all is well. */
+const PROBLEM_TEXT: Record<SourceProblem, string> = {
+  mic: "Mikrofoni ei leitud või selle kasutamine ei ole lubatud. Luba mikrofon brauseri aadressiribal.",
+  "no-audio": "Heli ei jõua Kõneväljani. Kontrolli, et mikrofon on ühendatud ja sisse lülitatud.",
+  unreachable: "Serveriga ei saanud ühendust.",
+  connection: "Ühendus serveriga katkes.",
+  busy: "Server on hõivatud. Proovi mõne minuti pärast.",
+  refused: "Juurdepääsuvõti puudub või ei sobi. Ava link, mis sisaldab võtit.",
+};
+
 export function AppShell() {
   const { running, deleted, sessionId } = useSession();
+  // set after mounting, so the server-rendered page and the first browser render agree
+  const [mode, setMode] = useState<ReturnType<typeof sourceMode> | null>(null);
+  const [problem, setProblem] = useState<SourceProblem | null>(null);
+  // the microphone only starts once the user has said that everyone in the room has been told
+  const [told, setTold] = useState(false);
+  const navigate = useNavigate();
+  const pathname = useLocation({ select: (l) => l.pathname });
+  useEffect(() => setMode(sourceMode()), []);
   // A new session gets a fresh source; pausing only stops it, so it resumes in place.
   // eslint-disable-next-line react-hooks/exhaustive-deps -- sessionId is the intentional reset trigger
   const source = useMemo(() => createSpeechSource(), [sessionId]);
   // A replay or the microphone brings its own speakers, so the demo's starting four must not stay on the field.
   useEffect(() => {
-    if (replayName() || liveRequested()) actions.clearSpeakers();
+    if (sourceMode() !== "demo") actions.clearSpeakers();
   }, []);
   useEffect(() => source.subscribe(actions.ingest), [source]);
   useEffect(() => {
+    setProblem(null);
+    return source.subscribeProblems?.(setProblem);
+  }, [source]);
+  useEffect(() => {
     if (!running || deleted) return;
+    if (source.requiresConsent && !told) return;
     source.start();
     return () => source.stop();
-  }, [source, running, deleted]);
+  }, [source, running, deleted, told]);
+  const waitingForConsent = mode === "live" && !told && running && !deleted;
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-x-clip aurora-field">
@@ -58,17 +82,67 @@ export function AppShell() {
               ))}
             </ul>
           </nav>
-          <p role="status" className="flex items-center gap-2 text-sm font-bold">
-            <span aria-hidden className={`inline-block size-3 rounded-full ${running && !deleted ? "bg-live animate-pulse" : "bg-muted-foreground"}`} />
-            {deleted ? "Andmed kustutatud" : running ? "Väli on elav" : "Peatatud"}
+          <p role="status" className="text-sm font-bold">
+            {deleted ? "Andmed kustutatud" : running ? "" : "Peatatud"}
           </p>
         </div>
       </header>
+      {mode === "demo" && (
+        <p className="relative text-center text-sm font-semibold text-muted-foreground">Näide: väljamõeldud vestlus, mitte päris kõne.</p>
+      )}
+      {problem && (
+        <div role="alert" className="relative mx-auto flex w-full max-w-7xl flex-wrap items-center gap-3 px-4 py-2">
+          <p className="rounded-md border-2 border-border bg-card px-4 py-3 text-lg font-semibold">{PROBLEM_TEXT[problem]}</p>
+          {problem !== "refused" && (
+            <button onClick={() => source.retry?.()} className="min-h-11 rounded-full border border-border px-5 font-semibold hover:bg-muted">
+              Proovi uuesti
+            </button>
+          )}
+        </div>
+      )}
+      {waitingForConsent && (
+        <section aria-labelledby="enne-alustamist" className="relative mx-auto w-full max-w-3xl px-4 py-6">
+          <div className="rounded-md border-2 border-border bg-card p-6">
+            <h2 id="enne-alustamist" className="text-2xl font-bold">Enne alustamist</h2>
+            <p className="mt-3 text-lg">
+              Kõneväli muudab ruumis räägitu tekstiks. Heli saadetakse töötlemiseks serverisse ja seda ei salvestata. Tekst jääb ainult selle brauseri mällu.
+            </p>
+            <p className="mt-3 text-lg">
+              Kõik ruumisolijad peavad sellest teadma ja olema nõus (ainult täiskasvanud). Nõusoleku saab igal ajal tagasi võtta nupuga „Peata”.
+            </p>
+            <p className="mt-3 text-lg">Tekst on automaatne ja võib sisaldada vigu. Ära toetu sellele tervise, õiguse ega ohutuse otsustes.</p>
+            <p className="mt-3 text-lg">
+              Nimed on valikulised: Kõnevälja saab täisväärtuslikult kasutada ka ilma. Nimedega töötamiseks küsitakse järgmisel sammul eraldi nõusolekut.
+            </p>
+            <p className="mt-3">
+              <Link to="/privaatsus" className="font-semibold underline">Andmed ja privaatsus</Link>
+            </p>
+            <p className="mt-4 font-semibold">Kõik ruumisolijad on sellest teavitatud ja nõus.</p>
+            <div className="mt-3 flex flex-wrap gap-3">
+              <button onClick={() => setTold(true)} className="min-h-12 rounded-full border-2 border-primary px-6 text-lg font-bold text-primary hover:bg-muted">
+                Alusta ilma nimedeta
+              </button>
+              <button
+                onClick={() => {
+                  actions.requestNames();
+                  setTold(true);
+                  if (pathname !== "/vali") void navigate({ to: "/vali" });
+                }}
+                className="min-h-12 rounded-full border-2 border-primary px-6 text-lg font-bold text-primary hover:bg-muted"
+              >
+                Alusta nimedega
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
       <main id="sisu" className="relative flex-1 mx-auto w-full max-w-7xl px-4 py-6 flex flex-col">
-        <Outlet />
+        <SpeechSourceContext.Provider value={source}>
+          <Outlet />
+        </SpeechSourceContext.Provider>
       </main>
       <footer className="relative py-4 text-center text-sm text-muted-foreground no-print">
-        Kõneväli teeb vestluse nähtavaks, et kõik saaksid võrdselt osaleda. Tehisaru abistab — inimene kontrollib.
+        Tekst on automaatne ja võib eksida. Ära toetu sellele tervise, õiguse ega ohutuse otsustes.
       </footer>
     </div>
   );

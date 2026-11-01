@@ -51,6 +51,8 @@ interface State {
   sessionId: number;
   /** speakerId → arrival time of their latest sentence; absent = has not spoken. */
   lastSpokeAt: Record<string, number>;
+  /** The user chose "Alusta nimedega": the participants panel opens on the consent step for names. */
+  namesRequested: boolean;
 }
 
 const initialSpeakers: Speaker[] = [
@@ -87,10 +89,11 @@ const initialState: State = {
   activeId: null,
   previousId: null,
   running: true,
-  audit: [{ id: "a0", time: "—", text: "Seanss alustati. Osalejaid teavitati salvestamisest." }],
+  audit: [{ id: "a0", time: "—", text: "Seanss alustati." }],
   deleted: false,
   sessionId: 0,
   lastSpokeAt: {},
+  namesRequested: false,
 };
 let state: State = initialState;
 const listeners = new Set<() => void>();
@@ -150,7 +153,10 @@ export const actions = {
     set({ utterances: [], lastSpokeAt: {}, activeId: null, previousId: null, deleted: true, running: false, ...log("Transkript kustutati kasutaja soovil.") });
   },
   restart() {
-    set({ deleted: false, running: true, sessionId: state.sessionId + 1, ...log("Uus seanss alustati.") });
+    set({ deleted: false, running: true, sessionId: state.sessionId + 1, namesRequested: false, ...log("Uus seanss alustati.") });
+  },
+  requestNames(on = true) {
+    if (state.namesRequested !== on) set({ namesRequested: on });
   },
   addSpeaker(name?: string, id: string = crypto.randomUUID(), detected = false) {
     const n = name?.trim() || `Kõneleja ${state.speakers.length + 1}`;

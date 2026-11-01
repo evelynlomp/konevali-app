@@ -1,0 +1,4 @@
+# What tools/live.Dockerfile installs: the versions the server was developed and measured with.
+sherpa-onnx==2.0.1
+numpy==2.5.4
+websockets==17.4

@@ -5,12 +5,14 @@
 
 --speed 1 sends in real time (a 5-minute file takes 5 minutes); 4 is four times faster, but the server then has
 less time per second of audio. "late" = how long after the sentence ended (in recording time) it arrived.
+If the server was started with KONEVALI_TOKEN, set the same variable here.
 """
 
 import argparse
 import asyncio
 import importlib.util
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -42,9 +44,14 @@ async def run(args) -> None:
     started = time.monotonic()
 
     async with websockets.connect(args.url, max_size=1 << 20) as ws:
+        if os.environ.get("KONEVALI_TOKEN"):  # a server with a token wants this first
+            await ws.send(json.dumps({"type": "hello", "key": os.environ["KONEVALI_TOKEN"]}))
+
         async def receive():
             async for message in ws:
                 event = json.loads(message)
+                if event.get("type") != "final":
+                    continue
                 now = (time.monotonic() - started) * args.speed
                 event["late"] = round(now - event["t"] / 1000, 1)
                 events.append(event)

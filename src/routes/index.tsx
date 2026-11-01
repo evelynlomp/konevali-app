@@ -25,7 +25,7 @@ function HomePage() {
           <h1 id="pealkiri" className="font-display text-6xl font-bold tracking-tight sm:text-7xl">Kõneväli</h1>
           <p className="mt-4 text-3xl font-semibold leading-tight text-primary sm:text-4xl">Näe, kes räägib. Mõista, mis toimub.</p>
           <p className="mt-6 max-w-xl text-xl leading-relaxed text-muted-foreground">
-            Kõneväli kirjeldab vestluse reaalajas: iga kõneleja nimi on oma kohal ja iga lause ilmub just tema juurde. Kogu vestlus jääb alles transkripti ja kokkuvõttesse.
+            Kõneväli kirjeldab vestluse reaalajas: iga kõneleja nimi on oma kohal ja iga lause ilmub just tema juurde. Tekst on selle seansi ajal saadaval transkriptina.
           </p>
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <Link to="/vali" className="inline-flex min-h-12 items-center rounded-full bg-primary px-8 text-lg font-bold text-primary-foreground transition-transform hover:scale-105">Astu vestlusesse</Link>
@@ -39,9 +39,9 @@ function HomePage() {
         <h2 id="kuidas-pealkiri" className="text-3xl font-bold">Kuidas see töötab</h2>
         <ol className="mt-8 grid gap-10 sm:grid-cols-3">
           {[
-            ["1. Hääled tuvastatakse", "Iga uus kõneleja ilmub väljale automaatselt. Saad nime muuta ja ta sobivasse kohta lohistada."],
-            ["2. Kõne muutub nähtavaks", "Iga lause tekib selle inimese lähedale, kes selle ütles — sõna-sõnalt, kohe pärast ütlemist."],
-            ["3. Midagi ei lähe kaduma", "Kogu vestlus jääb alles: transkript ja kokkuvõte on loetavad ka pärast kohtumist."],
+            ["1. Heli muutub tekstiks", "Ruumis räägitu tehakse reaalajas tekstiks. Selles versioonis ei eristata kõnelejaid: kogu tekst on ühe nime all, mida saad ise muuta."],
+            ["2. Tekst ilmub väljale", "Iga lause ilmub nime juurde, kohe pärast ütlemist."],
+            ["3. Tekst jääb sinu brauserisse", "Server ei salvesta midagi. Transkripti saad alla laadida või kustutada ning lehe sulgemisel see kaob."],
           ].map(([t, d]) => (
             <li key={t} className="border-l-2 border-primary/50 pl-5">
               <h3 className="text-xl font-bold text-primary">{t}</h3>
@@ -57,9 +57,9 @@ function HomePage() {
         </h2>
         <ul className="mt-12 grid gap-10 sm:grid-cols-3">
           {[
-            ["Näed, kes räägib", "Iga kõneleja nimi on väljal tema kohal. Rääkiva inimese nimi on eredaim ja suurem."],
-            ["Jälgid vestlust reaalajas", "Lausemed ilmuvad kõneleja juurde selles järjekorras, kui need öeldakse."],
-            ["Saad transkripti ja kokkuvõtte", "Vestluse tekst ja kokkuvõte jäävad alles — saad neid lugeda, otsida ja eksportida."],
+            ["Näed, mida öeldakse", "Rääkija nimi on väljal oma kohal ja tekst ilmub selle juurde."],
+            ["Jälgid vestlust reaalajas", "Laused ilmuvad selles järjekorras, kui need öeldakse."],
+            ["Saad transkripti", "Seansi tekst on loetav ja alla laaditav TXT-failina."],
           ].map(([t, d]) => (
             <li key={t} className="border-l-2 border-primary/50 pl-5">
               <h3 className="text-xl font-bold text-primary">{t}</h3>
@@ -77,7 +77,8 @@ function MiniField() {
   const { speakers, utterances, activeId } = useSession();
   const rank = attentionRanks(utterances, activeId);
   return (
-    <figure className="relative h-[26rem] sm:h-[30rem]" aria-label="Elav näide: nimed ja nende viimased laused vestlusväljal">
+    <figure className="relative h-[26rem] sm:h-[30rem]" aria-label="Näide: nimed ja nende viimased laused vestlusväljal">
+      <figcaption className="absolute inset-x-0 top-0 text-center text-sm font-semibold text-muted-foreground">Näide: väljamõeldud vestlus</figcaption>
       {speakers.slice(0, 8).map((s) => {
         const r = rank(s.id), p = presenceFromRank(r), glow = colorGlow[s.color];
         const lines = r < 2 ? utterances.filter((u) => u.speakerId === s.id).slice(r === 0 ? -2 : -1).reverse() : [];

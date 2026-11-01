@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { actions, COLOR_LABELS, useSession, type Speaker, type SpeakerColor, type Utterance } from "@/lib/session-store";
 import { colorGlow } from "@/components/AppShell";
+import { NamesStatus, VoiceSample } from "@/components/NamesPanel";
+import { useNames } from "@/lib/speech/use-names";
 import { captionFade, EMPHASIS, type Activity } from "@/lib/presence";
 import { CAPTION_ITEM_GAP, captionLinePx, shownLines, type Placement } from "@/lib/caption-layout";
 import { layoutField, nameRem, NO_HIDING, PHONE_MAX_W, type HidingState } from "@/lib/field-layout";
@@ -25,8 +27,12 @@ const presenceWord = (a: Activity) =>
   a.neverSpoke ? "pole veel rääkinud" : a.state === "active" ? "räägib praegu" : a.state === "recent" ? "rääkis hiljuti" : a.state === "quiet" ? "vaikib" : "vaikib pikalt";
 
 function FieldPage() {
-  const { speakers, utterances, lastSpokeAt, running, deleted } = useSession();
+  const { speakers, utterances, lastSpokeAt, running, deleted, namesRequested } = useSession();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // "Alusta nimedega" opens the participants panel on the consent step
+  useEffect(() => {
+    if (namesRequested) setSettingsOpen(true);
+  }, [namesRequested]);
   const fieldRef = useRef<HTMLDivElement>(null);
   const size = useElementSize(fieldRef);
   const rem = useRemPx();
@@ -68,7 +74,7 @@ function FieldPage() {
         <div role="log" aria-live="polite" aria-label="Viimased laused" className="sr-only">
           {utterances.slice(-5).map((u) => <p key={u.id}>{nameOf(u.speakerId)}: {u.text}</p>)}
         </div>
-        {utterances.length === 0 && <p className="absolute inset-x-0 bottom-4 text-center text-lg text-muted-foreground">{deleted ? "Väli on kustutatud." : "Väli ootab esimest häält…"}</p>}
+        {deleted && <p className="absolute inset-x-0 bottom-4 text-center text-lg text-muted-foreground">Väli on kustutatud.</p>}
       </div>
 
       {/* Quiet secondary controls */}
@@ -86,7 +92,8 @@ function FieldPage() {
       </div>
       {settingsOpen && (
         <section id="haalte-seaded" aria-label="Osalejate seaded" className="relative pb-4">
-          <p className="mb-3 text-sm text-muted-foreground">{speakers.length} osalejat · uued kõnelejad lisanduvad tuvastamisel automaatselt</p>
+          <NamesStatus />
+          <p className="mb-3 text-sm text-muted-foreground">{speakers.length} osalejat · nime saad ise muuta</p>
           <AddParticipant />
           <ul className="mt-3 max-h-[60vh] divide-y divide-border overflow-y-auto border-y border-border">
             {speakers.map((s) => <VoiceEditor key={s.id} s={s} others={speakers.filter((o) => o.id !== s.id)} />)}
@@ -185,6 +192,7 @@ function AddParticipant() {
 }
 
 function VoiceEditor({ s, others }: { s: Speaker; others: Speaker[] }) {
+  const { control } = useNames();
   const [name, setName] = useState(s.name);
   const [mergeInto, setMergeInto] = useState("");
   const id = `nimi-${s.id}`;
@@ -206,11 +214,14 @@ function VoiceEditor({ s, others }: { s: Speaker; others: Speaker[] }) {
           </label>
         ))}
       </fieldset>
+      <div className="basis-full">
+        <VoiceSample s={s} />
+      </div>
       <button type="button" onClick={() => document.getElementById(`nimi-valjal-${s.id}`)?.focus()} className="min-h-11 rounded-md px-3 font-semibold underline-offset-4 hover:underline">
         Paiguta väljal
       </button>
       {others.length > 0 && (
-        <form className="flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); if (mergeInto && confirm(`Liita „${s.name}” teise kõnelejaga? Tema read lähevad üle.`)) actions.merge(s.id, mergeInto); }}>
+        <form className="flex items-center gap-2" onSubmit={(e) => { e.preventDefault(); if (mergeInto && confirm(`Liita „${s.name}” teise kõnelejaga? Tema read lähevad üle.`)) control?.removeProfile(s.id); actions.merge(s.id, mergeInto); }}>
           <label className="sr-only" htmlFor={`liida-${s.id}`}>Liida kõnelejaga</label>
           <select id={`liida-${s.id}`} value={mergeInto} onChange={(e) => setMergeInto(e.target.value)} className="min-h-11 rounded-md border border-input bg-popover px-2">
             <option value="">Liida kõnelejaga…</option>
@@ -219,7 +230,7 @@ function VoiceEditor({ s, others }: { s: Speaker; others: Speaker[] }) {
           <button disabled={!mergeInto} className="min-h-11 rounded-md border border-border px-3 font-semibold disabled:opacity-50">Liida</button>
         </form>
       )}
-      <button type="button" onClick={() => { if (confirm(`Eemaldada „${s.name}” väljalt?`)) actions.removeSpeaker(s.id); }} className="ml-auto min-h-11 rounded-md px-3 font-semibold text-destructive hover:underline">
+      <button type="button" onClick={() => { if (confirm(`Eemaldada „${s.name}” väljalt?`)) { control?.removeProfile(s.id); actions.removeSpeaker(s.id); } }} className="ml-auto min-h-11 rounded-md px-3 font-semibold text-destructive hover:underline">
         Eemalda
       </button>
     </li>

@@ -170,6 +170,10 @@ class SentenceBuilder:
         if self._pending and now_s - self._pending[-1][1] >= self.break_s:
             self.flush()
 
+    def open_start_ms(self) -> int | None:
+        """Live use: start (ms) of the sentence being built, or None when nothing is pending."""
+        return round(self._pending[0][1] * 1000) if self._pending else None
+
     def flush(self) -> None:
         """End the sentence being built (if any) and add it as an event."""
         pending, self._pending = self._pending, []
