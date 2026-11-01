@@ -36,3 +36,25 @@ public/replay/*
 !public/replay/sample.json
 roster*.json
 *.roster.json
+
+# Recordings, transcripts, truth tables and voice prints are personal data: never commit them, wherever they are put
+*.wav
+*.mp3
+*.m4a
+*.flac
+*.ogg
+truth-*
+vahetused-*
+hindamisraport*
+scd-*.json
+voiceprint*
+enrolment*.json
+*.onnx
+*.ckpt
+
+# Python
+__pycache__/
+*.pyc
+
+# Bun is the package manager (bun.lock); npm's lockfile is only a side effect of running npm locally
+package-lock.json
