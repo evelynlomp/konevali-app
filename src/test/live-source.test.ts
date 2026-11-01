@@ -75,6 +75,13 @@ describe("parseLiveMessage", () => {
     expect(parseLiveMessage(final("B", " Tere. "))).toMatchObject({ speakerId: "B", speakerName: "Kõneleja B", text: "Tere.", isFinal: true });
   });
 
+  it("shows the name a roster server sends instead of Kõneleja <label>", () => {
+    const message = JSON.stringify({ type: "final", speaker: "Mari", name: "Mari", text: "Tere.", score: 0.6 });
+    expect(parseLiveMessage(message)).toMatchObject({ speakerId: "Mari", speakerName: "Mari" });
+    expect(parseLiveMessage(JSON.stringify({ type: "final", speaker: "Tundmatu", name: "Tundmatu", text: "Tere." }))).toMatchObject({ speakerName: "Tundmatu" });
+    expect(parseLiveMessage(JSON.stringify({ type: "final", speaker: "A", name: "  ", text: "Tere." }))).toMatchObject({ speakerName: "Kõneleja A" });
+  });
+
   it("ignores other messages, damaged JSON and empty text", () => {
     expect(parseLiveMessage(JSON.stringify({ type: "partial", speaker: "A", text: "x" }))).toBeNull();
     expect(parseLiveMessage("{not json")).toBeNull();

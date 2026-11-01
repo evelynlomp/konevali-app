@@ -10,11 +10,12 @@ export function parseLiveMessage(data: unknown): SpeechEvent | null {
   } catch {
     return null;
   }
-  const { type, speaker, text } = message ?? {};
+  const { type, speaker, text, name } = message ?? {};
   if (type !== "final" || typeof speaker !== "string" || !speaker.trim() || typeof text !== "string" || !text.trim()) return null;
   return {
     speakerId: speaker.trim(),
-    speakerName: `Kõneleja ${speaker.trim()}`,
+    // a server with a roster sends the person's name; otherwise the speaker is an anonymous label
+    speakerName: typeof name === "string" && name.trim() ? name.trim() : `Kõneleja ${speaker.trim()}`,
     text: text.trim(),
     timestamp: Date.now(),
     isFinal: true,

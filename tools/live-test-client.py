@@ -67,9 +67,9 @@ async def run(args) -> None:
     print(f"\n{total:.0f} s heli, {len(events)} lauset, {words} sõna; "
           f"hilinemine (sõnumi lõpust): mediaan {late[len(late) // 2]:.1f} s, 90. pr {late[int(len(late) * 0.9)]:.1f} s, max {late[-1]:.1f} s" if events else "\nÜhtegi lauset ei tulnud.")
     if args.out:
+        # everything the server sent (a roster server adds name, score, margin, short, embed_ms), plus "late"
         args.out.write_text(json.dumps({"version": 1, "audio": args.wav.name, "events": [
-            {"t": e["t"], "start": e["start"], "speaker": e["speaker"], "text": e["text"], "late": e["late"]} for e in events]},
-            ensure_ascii=False, indent=1), encoding="utf-8")
+            {k: v for k, v in e.items() if k != "type"} for e in events]}, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
 def parse_args(argv=None) -> argparse.Namespace:

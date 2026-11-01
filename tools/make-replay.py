@@ -359,16 +359,22 @@ def assign_roster(events: list[dict], samples: np.ndarray, rate: int, embed, peo
             event["speaker"] = previous or UNKNOWN
             event["short"] = True
             continue
-        v = np.array(vector, dtype=np.float32)
-        v /= np.linalg.norm(v)
-        ranked = sorted(((float(v @ c), name) for name, c in people.items()), reverse=True)
-        score, name = ranked[0]
-        event["speaker"] = name if score >= threshold else UNKNOWN
+        name, score, margin = closest_person(vector, people, threshold)
+        event["speaker"] = name
         event["score"] = round(score, 3)
-        if len(ranked) > 1:
-            event["margin"] = round(score - ranked[1][0], 3)
+        if margin is not None:
+            event["margin"] = round(margin, 3)
         previous = event["speaker"]
     return events
+
+
+def closest_person(vector, people: dict, threshold: float) -> tuple[str, float, float | None]:
+    """(name or UNKNOWN, best cosine similarity, lead over the second best person or None) for one voice vector."""
+    v = np.array(vector, dtype=np.float32)
+    v /= np.linalg.norm(v)
+    ranked = sorted(((float(v @ c), name) for name, c in people.items()), reverse=True)
+    score, name = ranked[0]
+    return (name if score >= threshold else UNKNOWN), score, (score - ranked[1][0] if len(ranked) > 1 else None)
 
 
 def make_embedder(extractor):
