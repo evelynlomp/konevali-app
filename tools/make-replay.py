@@ -58,20 +58,28 @@ default 0.6 is only a starting point; thresholds that worked on the first two re
 labelled everyone correctly online.
 A table of sentences, labels and scores is printed. The threshold is not calibrated: if one person gets two labels,
 lower --speaker-threshold, if two people share one, raise it. To try thresholds without running the ASR again, feed
-the sentences of an earlier replay file:  --events-from public/replay/meeting.json  (the WAV is still needed, for the audio).
+the sentences of an earlier replay file:  --events-from ~/konevali-data/replay/meeting.json  (the WAV is still needed, for the audio).
 Not done yet: no speaker change detection (two voices in one sentence get one label), no names.
 
-The output goes to public/replay/<wav name>.json. That folder is not ignored by git yet:
-do not commit a replay of a real meeting.
+Where the output goes. A replay of a real recording holds what people said, so it is written outside the repository:
+<data folder>/replay/<wav name>.json, where the data folder is $KONEVALI_DATA_DIR or, by default, ~/konevali-data.
+`npm run dev` serves it at /replay/<name>.json (development only; vite.config.ts); a build never contains it.
+Only the hand-written public/replay/sample.json is part of the repository. Use --out to write somewhere else.
 """
 
 import argparse
 import json
+import os
 import sys
 import wave
 from pathlib import Path
 
 import numpy as np
+
+def data_dir() -> Path:
+    """Where recordings' replays, rosters and the like are kept: outside the repository, never published."""
+    return Path(os.environ.get("KONEVALI_DATA_DIR") or Path.home() / "konevali-data")
+
 
 CHUNK_SECONDS = 0.1  # audio is fed to the recognizer in 100 ms pieces, like a live stream
 TAIL_SECONDS = 0.66  # silence appended at the end so the last words are decoded (as Sherpa's own examples do)
@@ -455,7 +463,7 @@ def parse_args(argv=None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="WAV -> Kõneväli replay JSON (Sherpa-ONNX ASR, one speaker).")
     p.add_argument("wav", type=Path, help="16/24/32-bit PCM WAV file")
     p.add_argument("--model-dir", help="folder with encoder.onnx, decoder.onnx, joiner.onnx, tokens.txt (not needed with --events-from)")
-    p.add_argument("--out", type=Path, help="output JSON (default: public/replay/<wav name>.json)")
+    p.add_argument("--out", type=Path, help="output JSON (default: <data folder>/replay/<wav name>.json, outside the repository; data folder = $KONEVALI_DATA_DIR or ~/konevali-data)")
     p.add_argument("--speaker", default="A", help="speaker label used for every sentence (default: A)")
     p.add_argument("--decoding-method", default="modified_beam_search", choices=["greedy_search", "modified_beam_search"])
     p.add_argument("--break", dest="break_s", type=float, default=1.5, help="seconds of silence that end a sentence even without punctuation (default 1.5)")
@@ -479,7 +487,7 @@ def main(argv=None) -> None:
     args = parse_args(argv)
     if not args.wav.is_file():
         sys.exit(f"Faili ei leitud: {args.wav}")
-    out = args.out or Path("public/replay") / f"{args.wav.stem}.json"
+    out = args.out or data_dir() / "replay" / f"{args.wav.stem}.json"
 
     if not args.events_from and not args.model_dir:
         sys.exit("Vaja on kas --model-dir (ASR mudel) või --events-from (varasem replay JSON).")

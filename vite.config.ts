@@ -6,10 +6,17 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+import { publicDataGuard, replayDevServer } from "./vite/replay-data";
+
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
+  },
+  vite: {
+    // Replays of real recordings stay outside the repository: the dev server reads them from the data folder,
+    // and a build refuses to publish anything but public/replay/sample.json (see vite/replay-data.ts).
+    plugins: [replayDevServer(), publicDataGuard()],
   },
 });

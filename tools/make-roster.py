@@ -9,7 +9,7 @@ A person is NAME=FILE, or NAME=FILE@START-END[,START-END...] (seconds) to take o
 that person speaks alone. About 10 seconds of clear speech is plenty: on our recordings 5 s already recognised people
 nearly as well. Then label a recording with the roster:
 
-    python tools/make-replay.py meeting.wav --events-from public/replay/meeting.json \\
+    python tools/make-replay.py meeting.wav --events-from ~/konevali-data/replay/meeting.json \\
         --speaker-model sherpa-models/speaker/nemo_en_titanet_small.onnx --roster roster.json
 
 Sentences get the name of the closest enrolled voice, or "Tundmatu" if nobody on the roster is close enough.
@@ -115,7 +115,7 @@ def main(argv=None) -> None:
     p = argparse.ArgumentParser(description="Make a roster (voice prints of named people) from short voice samples.")
     p.add_argument("--speaker-model", required=True, help="speaker embedding model (.onnx), the same one make-replay.py will use")
     p.add_argument("--person", action="append", required=True, help="NAME=FILE or NAME=FILE@START-END[,START-END...] (seconds)")
-    p.add_argument("--out", type=Path, default=Path("roster.json"))
+    p.add_argument("--out", type=Path, help="roster file (default: <data folder>/rosters/roster.json, outside the repository)")
     p.add_argument("--threshold", type=float, help="cosine similarity below which a voice is nobody on the roster (default depends on the model)")
     p.add_argument("--num-threads", type=int, default=2)
     args = p.parse_args(argv)
@@ -150,8 +150,10 @@ def main(argv=None) -> None:
 
     roster = {"version": 1, "model": model_name, "threshold": threshold,
               "note": "voice prints are personal biometric data: keep private, do not commit", "people": people}
-    args.out.write_text(json.dumps(roster, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-    print(f"{len(people)} inimest -> {args.out} (lävi {threshold})", file=sys.stderr)
+    out = args.out or mr.data_dir() / "rosters" / "roster.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(roster, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    print(f"{len(people)} inimest -> {out} (lävi {threshold})", file=sys.stderr)
 
 
 if __name__ == "__main__":
