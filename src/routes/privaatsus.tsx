@@ -71,6 +71,10 @@ function PrivacyPage() {
             ],
             ["Kui kaua?", "Kuni lehe sulgemiseni või transkripti kustutamiseni. Seansi lõppedes ei jää serverisse midagi."],
             ["Tehisaru piirangud", "Tekst on masinloodud ja võib sisaldada vigu: sõnu võib puududa või olla valesti tuvastatud. Ära toetu sellele tervise, õiguse ega ohutuse otsustes."],
+            [
+              "Kasutatud mudelid",
+              "Kõnetuvastus: TalTechNLP streaming-zipformer-large.et-en.w2n (Apache-2.0, Hugging Face). Nimede jaoks (kui need on sees): NVIDIA NeMo TitaNet-small (Apache-2.0, ONNX-teisendus k2-fsa/sherpa-onnx'ist). Mudeleid jooksutab sherpa-onnx.",
+            ],
             ["Sinu õigused", "Võid küsida oma andmete kohta, nõuda nende kustutamist ja esitada kaebuse Andmekaitse Inspektsioonile (aki.ee)."],
           ].map(([t, d]) => (
             <div key={t}><dt className="font-bold">{t}</dt><dd>{d}</dd></div>
