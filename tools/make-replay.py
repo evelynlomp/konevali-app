@@ -319,6 +319,50 @@ def assign_speakers(events: list[dict], samples: np.ndarray, rate: int, embed, m
     return events
 
 
+UNKNOWN = "Tundmatu"
+ROSTER_MIN_SECONDS = 0.8  # a known voice is recognised from less audio than a new speaker is started from
+
+
+def load_roster(path: Path) -> dict:
+    """A roster made by tools/make-roster.py: {"model", "threshold", "people": {name: unit vector}}."""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    people = {p["name"]: np.array(p["vector"], dtype=np.float32) for p in data.get("people", []) if p.get("vector")}
+    if not people:
+        sys.exit(f"{path}: selles failis pole ühtegi inimest")
+    return {"model": data.get("model", ""), "threshold": float(data.get("threshold", 0.0)), "people": people}
+
+
+def assign_roster(events: list[dict], samples: np.ndarray, rate: int, embed, people: dict, threshold: float,
+                  min_seconds: float = ROSTER_MIN_SECONDS) -> list[dict]:
+    """Name every sentence after the enrolled person whose voice it is closest to; changes `events` in place.
+
+    A sentence whose best cosine similarity is below `threshold` is not anyone on the roster: it gets UNKNOWN.
+    Sentences shorter than `min_seconds` keep the previous label. Added to each event: `score` = best similarity,
+    `margin` = lead over the second best person, `short` = it only inherited the previous label.
+    """
+    previous = None
+    for event in events:
+        for key in ("score", "margin", "short", "new"):
+            event.pop(key, None)
+        begin, end = round(event["start"] * rate / 1000), round(event["t"] * rate / 1000)
+        segment = samples[begin:end]
+        vector = embed(segment, rate) if len(segment) >= min_seconds * rate else None
+        if vector is None:
+            event["speaker"] = previous or UNKNOWN
+            event["short"] = True
+            continue
+        v = np.array(vector, dtype=np.float32)
+        v /= np.linalg.norm(v)
+        ranked = sorted(((float(v @ c), name) for name, c in people.items()), reverse=True)
+        score, name = ranked[0]
+        event["speaker"] = name if score >= threshold else UNKNOWN
+        event["score"] = round(score, 3)
+        if len(ranked) > 1:
+            event["margin"] = round(score - ranked[1][0], 3)
+        previous = event["speaker"]
+    return events
+
+
 def make_embedder(extractor):
     """Wrap a Sherpa SpeakerEmbeddingExtractor as embed(segment, rate)."""
     def embed(segment: np.ndarray, rate: int):
@@ -371,10 +415,13 @@ def create_speaker_embedder(args: argparse.Namespace):
     return make_embedder(extractor), sherpa_onnx.SpeakerEmbeddingManager(extractor.dim)
 
 
-def build_replay(events: list[dict], audio_name: str, model_name: str, speakers: dict | None = None) -> dict:
+def build_replay(events: list[dict], audio_name: str, model_name: str, speakers: dict | None = None,
+                 names: dict | None = None) -> dict:
     replay = {"version": 1, "audio": audio_name, "model": model_name}
     if speakers:
         replay["speakers"] = speakers  # how the labels were made; Kõneväli ignores it
+    if names:
+        replay["names"] = names  # label -> name shown on the field (a roster's labels are already names)
     replay["events"] = events
     return replay
 
@@ -420,6 +467,8 @@ def parse_args(argv=None) -> argparse.Namespace:
     p.add_argument("--speaker-model", help="speaker embedding model (.onnx); without it every sentence gets --speaker")
     p.add_argument("--speaker-threshold", type=float, default=0.6, help="cosine score from which a voice counts as an earlier speaker (default 0.6, not calibrated)")
     p.add_argument("--min-speaker-seconds", type=float, default=1.5, help="sentences shorter than this keep the previous label (default 1.5)")
+    p.add_argument("--roster", type=Path, help="people made by tools/make-roster.py (needs the same --speaker-model): sentences get the name of the closest enrolled voice, or 'Tundmatu'")
+    p.add_argument("--roster-threshold", type=float, help="cosine similarity below which a voice is nobody on the roster (default: the value stored in the roster file)")
     p.add_argument("--events-from", type=Path, help="take the sentences from an earlier replay JSON instead of running the ASR")
     p.add_argument("--num-threads", type=int, default=2)
     p.add_argument("--capitalize", action="store_true", help="capitalise the first letter of every sentence")
@@ -451,16 +500,27 @@ def main(argv=None) -> None:
                             break_s=args.break_s, max_words=args.max_words, window_s=args.window)
         asr_model = Path(args.model_dir).name
 
-    speakers = None
+    speakers = names = None
+    if args.roster and not args.speaker_model:
+        sys.exit("--roster vajab ka --speaker-model (sama mudel, millega nimekiri tehti).")
     if args.speaker_model:
         embed, manager = create_speaker_embedder(args)
         print("Märgendan kõnelejad…", file=sys.stderr)
-        assign_speakers(events, samples, rate, embed, manager, args.speaker_threshold, args.min_speaker_seconds)
+        if args.roster:
+            roster = load_roster(args.roster)
+            if roster["model"] != Path(args.speaker_model).name:
+                sys.exit(f"Nimekiri on tehtud mudeliga {roster['model']}, aga --speaker-model on {Path(args.speaker_model).name}: hääled ei ole võrreldavad.")
+            threshold = args.roster_threshold if args.roster_threshold is not None else roster["threshold"]
+            assign_roster(events, samples, rate, embed, roster["people"], threshold)
+            names = {name: name for name in [*roster["people"], UNKNOWN]}
+            speakers = {"model": roster["model"], "roster": sorted(roster["people"]), "threshold": threshold}
+        else:
+            assign_speakers(events, samples, rate, embed, manager, args.speaker_threshold, args.min_speaker_seconds)
+            speakers = {"model": Path(args.speaker_model).name, "threshold": args.speaker_threshold, "min_seconds": args.min_speaker_seconds}
         print(speaker_table(events), file=sys.stderr)
         print(speaker_summary(events), file=sys.stderr)
-        speakers = {"model": Path(args.speaker_model).name, "threshold": args.speaker_threshold, "min_seconds": args.min_speaker_seconds}
 
-    replay = build_replay(events, args.wav.name, asr_model, speakers)
+    replay = build_replay(events, args.wav.name, asr_model, speakers, names)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(replay, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"{len(events)} lauset -> {out}", file=sys.stderr)
