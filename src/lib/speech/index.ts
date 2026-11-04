@@ -25,19 +25,35 @@ export function replayName(): string | null {
   return name && /^[A-Za-z0-9_-]+$/.test(name) ? name : null;
 }
 
-/** `?live` in the address bar listens to the microphone instead of playing the demo (a replay name wins over it). */
-export function liveRequested(): boolean {
-  return typeof window !== "undefined" && new URLSearchParams(window.location.search).has("live");
+/** A page built for a live server (VITE_LIVE_URL was set when it was built) is a real session, not the example. */
+function builtForLiveServer(): boolean {
+  const url = import.meta.env["VITE_LIVE_URL"];
+  return typeof url === "string" && url.length > 0;
 }
 
 /**
- * The access key of a private server, taken from the address fragment (`/vali?live#key=...`). A fragment is never
- * sent to any server in a request, so the key does not end up in the hosting logs.
+ * Listens to the microphone instead of playing the demo (a replay name wins over it). `?live` in the address asks for
+ * it; a page built for a live server does it by default, and `?demo` shows the made-up example conversation instead.
+ */
+export function liveRequested(): boolean {
+  if (typeof window === "undefined") return false;
+  const params = new URLSearchParams(window.location.search);
+  return params.has("live") || (builtForLiveServer() && !params.has("demo"));
+}
+
+let rememberedKey: string | undefined;
+
+/**
+ * The access key of a private server, taken from the address fragment (`/vali#key=...`). A fragment is never sent to
+ * any server in a request, so the key does not end up in the hosting logs. Moving between the pages of the app drops
+ * the fragment from the address, so the key is kept in memory (this tab only, not stored anywhere) for as long as the
+ * page is open: a new session started later still has it. A reload needs the link with the key again.
  */
 export function liveKey(): string | undefined {
   if (typeof window === "undefined") return undefined;
   const key = new URLSearchParams(window.location.hash.replace(/^#/, "")).get("key")?.trim();
-  return key && key.length <= 200 ? key : undefined;
+  if (key && key.length <= 200) rememberedKey = key;
+  return rememberedKey;
 }
 
 /** What the address asks for: a replay, the microphone, or (by default) the made-up demo. */

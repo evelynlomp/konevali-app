@@ -284,6 +284,32 @@ describe("LiveSpeechSource problems", () => {
   });
 });
 
+describe("a page built for a live server", () => {
+  afterEach(() => {
+    window.history.pushState({}, "", "/");
+    vi.unstubAllEnvs();
+  });
+
+  it("is the microphone by default, also on /vali without ?live", () => {
+    vi.stubEnv("VITE_LIVE_URL", "wss://live.example.invalid");
+    window.history.pushState({}, "", "/vali");
+    expect(liveRequested()).toBe(true);
+    expect(createSpeechSource()).toBeInstanceOf(LiveSpeechSource);
+  });
+
+  it("shows the made-up example only when asked with ?demo", () => {
+    vi.stubEnv("VITE_LIVE_URL", "wss://live.example.invalid");
+    window.history.pushState({}, "", "/vali?demo");
+    expect(liveRequested()).toBe(false);
+    expect(createSpeechSource()).toBeInstanceOf(DemoSpeechSource);
+  });
+
+  it("is still the demo when the page was not built for a live server", () => {
+    window.history.pushState({}, "", "/vali");
+    expect(liveRequested()).toBe(false);
+  });
+});
+
 describe("createSpeechSource with ?live", () => {
   afterEach(() => window.history.pushState({}, "", "/"));
 
@@ -295,12 +321,24 @@ describe("createSpeechSource with ?live", () => {
     expect(createSpeechSource()).toBeInstanceOf(LiveSpeechSource);
   });
 
-  it("takes the access key from the address fragment only", () => {
-    window.history.pushState({}, "", "/vali?live&key=nope#key=abc123");
-    const source = createSpeechSource() as unknown as { key?: string };
-    expect(source.key).toBe("abc123");
+  it("takes the access key from the address fragment only, never from the query", async () => {
+    vi.resetModules();
+    const fresh = await import("@/lib/speech");
     window.history.pushState({}, "", "/vali?live&key=nope");
-    expect((createSpeechSource() as unknown as { key?: string }).key).toBeUndefined();
+    expect((fresh.createSpeechSource() as unknown as { key?: string }).key).toBeUndefined();
+    window.history.pushState({}, "", "/vali?live&key=nope#key=abc123");
+    expect((fresh.createSpeechSource() as unknown as { key?: string }).key).toBe("abc123");
+  });
+
+  it("keeps the key after the address has lost it (moving to another page, starting a new session)", async () => {
+    vi.stubEnv("VITE_LIVE_URL", "wss://live.example.invalid"); // a hosted page is live on every address, with or without ?live
+    vi.resetModules();
+    const fresh = await import("@/lib/speech");
+    window.history.pushState({}, "", "/vali#key=abc123");
+    expect((fresh.createSpeechSource() as unknown as { key?: string }).key).toBe("abc123");
+    window.history.pushState({}, "", "/transkript");
+    expect((fresh.createSpeechSource() as unknown as { key?: string }).key).toBe("abc123");
+    vi.unstubAllEnvs();
   });
 
   it("never takes the server address from the address bar", () => {
