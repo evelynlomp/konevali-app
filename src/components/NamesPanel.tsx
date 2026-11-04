@@ -74,7 +74,7 @@ export function NamesStatus() {
             <li>Häälenäitest tehakse arvuline häälejälg. See on biomeetriline andmestik. Heli ei salvestata ja häälejälg on ainult selle seansi serveri mälus.</li>
             <li>Häälejälg kustub, kui eemaldad osaleja profiili, lülitad nimed välja või seansi lõpetad.</li>
             <li>Häälejälge kasutatakse ainult nime kuvamiseks: mitte autentimiseks, jälgimiseks ega hääle omaduste (emotsioon, vanus, sugu) tuvastamiseks.</li>
-            <li>Nimede kuvamiseks võrdleb server iga lause häält häälejälgedega. See puudutab ka neid, kes häälenäidet ei andnud: nende kohta häälejälge ei tehta ja midagi ei salvestata.</li>
+            <li>Nimede kuvamiseks arvutab server iga lause häälest ajutise häälevektori ja võrdleb seda häälejälgedega. See toimub ka nende puhul, kes häälenäidet ei andnud: nende vektorit ei salvestata ja see kustutatakse kohe pärast võrdlust.</li>
             <li>Nimi võib olla vale. Kui süsteem ei ole kindel, jääb nimi puudu.</li>
           </ul>
           <label className="flex min-h-11 items-start gap-3">

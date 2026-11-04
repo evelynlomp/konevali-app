@@ -65,7 +65,7 @@ describe("NamesStatus", () => {
     render(inSource(source, <NamesStatus />));
     fireEvent.click(screen.getByRole("button", { name: "Lülita nimed sisse" }));
     expect(screen.getByText(/biomeetriline andmestik/)).toBeInTheDocument();
-    expect(screen.getByText(/ka neid, kes häälenäidet ei andnud/)).toBeInTheDocument();
+    expect(screen.getByText(/ka nende puhul, kes häälenäidet ei andnud/)).toBeInTheDocument();
     const turnOn = screen.getAllByRole("button", { name: "Lülita nimed sisse" }).at(-1)!;
     expect(turnOn).toBeDisabled();
     fireEvent.click(screen.getByRole("checkbox"));

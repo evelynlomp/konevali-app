@@ -41,41 +41,50 @@ function PrivacyPage() {
             ["Kes vastutab?", CONTACT],
             [
               "Mida töödeldakse?",
-              "Ruumis räägitu heli, reaalajas, tekstiks tegemiseks. Heli ei salvestata: server hoiab seda ainult mälus töötlemise ajaks. Server ei salvesta ka teksti. Tekst on ainult selle brauseri mälus, kuni lehe sulged või kustutad transkripti.",
+              "Kõneväli töötleb ruumis räägitud heli reaalajas ja teeb selle tekstiks. Heli ei salvestata: server hoiab seda ainult mälus, kuni see on tekstiks tehtud. Server ei salvesta ka teksti. Tekst on ainult sinu brauseri mälus, kuni lehe sulged või transkripti kustutad. „Laadi alla” fail tekib sinu enda seadmes ja ainult siis, kui sa seda ise tahad. Leht ise ei kasuta küpsiseid ega salvesta midagi brauserisse.",
             ],
             [
               "Nimed on valikulised",
-              "Kõnevälja saab täisväärtuslikult kasutada ka ilma nimedeta: kogu tekst on siis ühe kõneleja all ja nime saad ise muuta. Nimed on vaikimisi väljas ja neid saab sisse lülitada ainult pärast eraldi nõusolekut.",
+              "Kõnevälja saab täisväärtuslikult kasutada ka ilma nimedeta. Siis on kogu tekst ühe kõneleja all ja nime saad ise muuta. Nimed on alguses väljas. Neid saab sisse lülitada alles pärast eraldi nõusolekut.",
             ],
             [
               "Häälejälg (kui nimed on sees)",
-              "Kes tahab nime, annab umbes 10-sekundilise häälenäite. Sellest tehakse arvuline häälejälg, mis on biomeetriline andmestik. Häälenäite heli visatakse minema kohe, kui häälejälg on tehtud. Häälejälg on ainult selle seansi serveri töömälus: kettale ei kirjutata ja logidesse ei panda. Kui häälejälgi on, hoiab server mälus ainult selle lause heli, mida pole veel nimetatud (lause pikkuse, kuni 30 sekundit), ja vaikuse ajal paar viimast sekundit. Kui lause on nimetatud, kustutatakse selle heli kohe.",
+              "Kes tahab, et tema nimi kuvataks, annab umbes 10-sekundilise häälenäite. Sellest tehakse häälejälg: arvud, mis kirjeldavad hääle omadusi. See on biomeetriline andmestik. Häälenäite heli kustutatakse kohe, kui häälejälg on valmis. Häälejälg on ainult serveri töömälus: seda ei kirjutata kettale ega logisse. Nimede ajal hoiab server mälus ka selle lause heli, mida ta pole veel nimetanud (kuni 30 sekundit), ja vaikuse ajal paar viimast sekundit. Kui lause on nimetatud, kustutatakse selle heli kohe.",
             ],
-            ["Mida häälejälg ei ole", "See ei ole autentimine, identiteedi tõend, jälgimine, emotsiooni, vanuse, soo ega muude omaduste tuvastamine. Seda kasutatakse ainult nime kuvamiseks."],
+            [
+              "Mida häälejälg ei ole",
+              "Häälejälge kasutatakse ainult nime kuvamiseks. See ei ole sisselogimine, isiku tõendamine ega jälgimine, ja selle põhjal ei tuvastata emotsiooni, vanust, sugu ega muid omadusi.",
+            ],
             [
               "Teised ruumisolijad",
-              "Nimede kuvamiseks võrdleb server iga lause häält häälejälgedega. See puudutab ka neid, kes häälenäidet ei andnud: nende häälest häälejälge ei tehta ega salvestata midagi. Kui süsteem ei ole kindel või lause on liiga lühike, jääb nimi puudu („Tundmatu”).",
+              "Nimede kuvamiseks arvutab server iga lause häälest ajutise häälevektori ja võrdleb seda häälejälgedega. See toimub ka nende puhul, kes häälenäidet ei andnud. Nende vektorit ei salvestata ega kasutata millekski muuks, see kustutatakse kohe pärast võrdlust ja nende kohta häälejälge ei tehta. Kui server ei ole kindel või lause on liiga lühike, jääb nimi puudu („Tundmatu”).",
             ],
             [
               "Eemaldamine ja kustumine",
-              "Oma häälejälje saad igal ajal eemaldada („Eemalda profiil”). „Nimed välja” kustutab kõik häälejäljed kohe. Häälejäljed kustuvad ka siis, kui seansi lõpetad, lehe sulged või ühendus katkeb, ning kui leht ei saada serverile 15 minutit midagi.",
+              "Oma häälejälje saad igal ajal eemaldada („Eemalda profiil”). „Nimed välja” kustutab kõik häälejäljed kohe. Häälejäljed kustuvad ka siis, kui seansi lõpetad, lehe sulged või ühendus katkeb, ja siis, kui leht ei saada serverile 15 minutit midagi.",
             ],
-            ["Täpsus", "Nimi võib olla vale ning täpsust eri häälte puhul ei ole eraldi mõõdetud. Ära toetu nimedele olulistes otsustes."],
+            ["Täpsus", "Nimi võib olla vale. Täpsust eri häälte puhul ei ole eraldi mõõdetud. Ära toetu nimedele olulistes otsustes."],
             [
               "Kus ja kellele?",
-              `${HOSTING} Heli läheb ainult Kõnevälja serverisse. Kolmanda osapoole kõnetuvastust ei kasutata ja andmeid ei kasutata mudelite õpetamiseks. Serveri hostija võib logida tehnilisi päringuid (näiteks IP-aadress).`,
+              `${HOSTING} Railway on USA ettevõte. Ühendus on krüpteeritud, aga liiklus läbib Railway võrku ja selle asukoht ei ole meie kontrolli all. Heli saadetakse Kõnevälja serverisse. Kolmanda osapoole kõnetuvastust ei kasutata ja andmeid ei kasutata mudelite õpetamiseks. Railway võib salvestada tehnilisi andmeid (näiteks IP-aadress).`,
             ],
             [
               "Alus ja nõusolek",
-              "Töötlemine toimub nõusoleku alusel. Kõik ruumisolijad (ainult täiskasvanud) peavad sellest teadma ja olema nõus. Nõusoleku saab igal ajal tagasi võtta nupuga „Peata”. Nõusolekuid ei salvesta see leht: korraldaja peab need ise fikseerima.",
+              "Töötlemine toimub nõusoleku alusel. Kõik ruumisolijad (ainult täiskasvanud) peavad sellest teadma ja olema nõus. Nõusoleku saab igal ajal tagasi võtta: ütle seda korraldajale ja vajuta nupule „Peata”. See leht ei salvesta nõusolekuid: korraldaja peab need ise kirja panema.",
             ],
-            ["Kui kaua?", "Kuni lehe sulgemiseni või transkripti kustutamiseni. Seansi lõppedes ei jää serverisse midagi."],
-            ["Tehisaru piirangud", "Tekst on masinloodud ja võib sisaldada vigu: sõnu võib puududa või olla valesti tuvastatud. Ära toetu sellele tervise, õiguse ega ohutuse otsustes."],
+            ["Kui kaua?", "Kuni lehe sulgemiseni või transkripti kustutamiseni. Kui seansi lõpetad, ei jää serverisse midagi."],
+            [
+              "Tehisaru piirangud",
+              "Tekst on arvuti tehtud ja võib sisaldada vigu: sõnu võib puududa või olla valesti kuuldud. Ära toetu sellele tervise, õiguse ega ohutuse otsustes.",
+            ],
             [
               "Kasutatud mudelid",
-              "Kõnetuvastus: TalTechNLP streaming-zipformer-large.et-en.w2n (Apache-2.0, Hugging Face). Nimede jaoks (kui need on sees): NVIDIA NeMo TitaNet-small (Apache-2.0, ONNX-teisendus k2-fsa/sherpa-onnx'ist). Mudeleid jooksutab sherpa-onnx.",
+              "Kõnetuvastus: TalTechNLP streaming-zipformer-large.et-en.w2n (Apache-2.0, Hugging Face). Nimede jaoks (kui need on sees): NVIDIA NeMo TitaNet-small (Apache-2.0, k2-fsa/sherpa-onnx'i ONNX-teisendus). Mudeleid jooksutab sherpa-onnx.",
             ],
-            ["Sinu õigused", "Võid küsida oma andmete kohta, nõuda nende kustutamist ja esitada kaebuse Andmekaitse Inspektsioonile (aki.ee)."],
+            [
+              "Sinu õigused",
+              "Sa võid küsida, mis andmeid sinu kohta töödeldakse, nõuda nende kustutamist, nõusoleku tagasi võtta ja esitada kaebuse Andmekaitse Inspektsioonile (aki.ee).",
+            ],
           ].map(([t, d]) => (
             <div key={t}><dt className="font-bold">{t}</dt><dd>{d}</dd></div>
           ))}
