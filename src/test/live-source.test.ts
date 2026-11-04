@@ -297,11 +297,11 @@ describe("a page built for a live server", () => {
     expect(createSpeechSource()).toBeInstanceOf(LiveSpeechSource);
   });
 
-  it("shows the made-up example only when asked with ?demo", () => {
+  it("never shows the made-up conversation in the field, not even with ?demo", () => {
     vi.stubEnv("VITE_LIVE_URL", "wss://live.example.invalid");
     window.history.pushState({}, "", "/vali?demo");
-    expect(liveRequested()).toBe(false);
-    expect(createSpeechSource()).toBeInstanceOf(DemoSpeechSource);
+    expect(liveRequested()).toBe(true);
+    expect(createSpeechSource()).toBeInstanceOf(LiveSpeechSource);
   });
 
   it("is still the demo when the page was not built for a live server", () => {

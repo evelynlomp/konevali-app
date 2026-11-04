@@ -63,7 +63,7 @@ Nimed on **valikulised ja sessioonipõhised**: häälejäljed elavad ainult ühe
 https://<veebi-domeen>/vali?live#key=<KONEVALI_TOKEN>
 ```
 
-Võti on aadressi lõpus pärast `#`: seda ei saadeta ühelegi serverile päringuga ega jää hostija logidesse. Enne mikrofoni käivitumist küsitakse kõigilt ruumisolijatelt nõusolekut. Kui leht on ehitatud `VITE_LIVE_URL`-iga, on see **vaikimisi päris sessioon** (`?live` pole vaja); väljamõeldud näide on aadressil `/vali?demo`. Ilma `#key=…`-ta ütleb leht "Juurdepääsuvõti puudub või ei sobi".
+Võti on aadressi lõpus pärast `#`: seda ei saadeta ühelegi serverile päringuga ega jää hostija logidesse. Enne mikrofoni käivitumist küsitakse kõigilt ruumisolijatelt nõusolekut. Kui leht on ehitatud `VITE_LIVE_URL`-iga, on see **vaikimisi päris sessioon** (`?live` pole vaja); väljamõeldud vestlust ei näidata väljal kunagi (avalehel on eraldi illustratsioon). Ilma `#key=…`-ta ütleb leht "Juurdepääsuvõti puudub või ei sobi".
 
 ## 5. Kuiv proov (enne iga teist inimest)
 

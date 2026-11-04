@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import type { SpeechEvent } from "./speech";
+import { builtForLiveServer, type SpeechEvent } from "./speech";
 
 export type SpeakerColor = "teal" | "petrol" | "forest" | "amber" | "sky" | "coral";
 
@@ -55,7 +55,8 @@ interface State {
   namesRequested: boolean;
 }
 
-const initialSpeakers: Speaker[] = [
+/** The made-up people of the demo (and of the home page's example). */
+export const DEMO_SPEAKERS: Speaker[] = [
   { id: "s1", name: "Mari", color: "teal", x: 16, y: 40, large: false, pinned: false, nameSource: "tuvastatud" },
   { id: "s2", name: "Jaan", color: "forest", x: 50, y: 8, large: false, pinned: false, nameSource: "tuvastatud" },
   { id: "s3", name: "Evelyn", color: "coral", x: 84, y: 40, large: false, pinned: false, nameSource: "tuvastatud" },
@@ -83,8 +84,9 @@ export function freeSpot(list: Speaker[]): { x: number; y: number } {
 const formatTime = (ms: number) => new Date(ms).toLocaleTimeString("et-EE", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 const now = () => formatTime(Date.now());
 
+// a page built for a live server starts with an empty field, so not even a flash of the made-up people shows
 const initialState: State = {
-  speakers: initialSpeakers,
+  speakers: builtForLiveServer() ? [] : DEMO_SPEAKERS,
   utterances: [],
   activeId: null,
   previousId: null,

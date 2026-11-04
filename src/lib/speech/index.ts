@@ -26,19 +26,18 @@ export function replayName(): string | null {
 }
 
 /** A page built for a live server (VITE_LIVE_URL was set when it was built) is a real session, not the example. */
-function builtForLiveServer(): boolean {
+export function builtForLiveServer(): boolean {
   const url = import.meta.env["VITE_LIVE_URL"];
   return typeof url === "string" && url.length > 0;
 }
 
 /**
  * Listens to the microphone instead of playing the demo (a replay name wins over it). `?live` in the address asks for
- * it; a page built for a live server does it by default, and `?demo` shows the made-up example conversation instead.
+ * it; a page built for a live server always does it: the field never shows the made-up conversation there.
  */
 export function liveRequested(): boolean {
   if (typeof window === "undefined") return false;
-  const params = new URLSearchParams(window.location.search);
-  return params.has("live") || (builtForLiveServer() && !params.has("demo"));
+  return new URLSearchParams(window.location.search).has("live") || builtForLiveServer();
 }
 
 let rememberedKey: string | undefined;

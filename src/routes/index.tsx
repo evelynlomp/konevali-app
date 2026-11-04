@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSession } from "@/lib/session-store";
+import { useEffect, useState } from "react";
+import { DEMO_SPEAKERS, type Utterance } from "@/lib/session-store";
+import { DemoSpeechSource } from "@/lib/speech/demo-source";
 import { colorGlow } from "@/components/AppShell";
 import { attentionRanks, EMPHASIS, presenceFromRank } from "@/lib/presence";
 
@@ -74,12 +76,27 @@ function HomePage() {
 
 /** A living miniature of the real field — same voices, same fading traces. */
 function MiniField() {
-  const { speakers, utterances, activeId } = useSession();
+  const [utterances, setUtterances] = useState<Utterance[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  // a made-up conversation that plays by itself: it only shows how the app works and is never mixed with a real session
+  useEffect(() => {
+    const source = new DemoSpeechSource();
+    const off = source.subscribe((e) => {
+      if (!DEMO_SPEAKERS.some((s) => s.id === e.speakerId)) return;
+      setUtterances((list) => [...list.slice(-30), { id: crypto.randomUUID(), speakerId: e.speakerId, text: e.text, time: "", at: Date.now(), turn: "" }]);
+      setActiveId(e.speakerId);
+    });
+    source.start();
+    return () => {
+      off();
+      source.stop();
+    };
+  }, []);
   const rank = attentionRanks(utterances, activeId);
   return (
     <figure className="relative h-[26rem] sm:h-[30rem]" aria-label="Näide: nimed ja nende viimased laused vestlusväljal">
       <figcaption className="absolute inset-x-0 top-0 text-center text-sm font-semibold text-muted-foreground">Näide: väljamõeldud vestlus</figcaption>
-      {speakers.slice(0, 8).map((s) => {
+      {DEMO_SPEAKERS.map((s) => {
         const r = rank(s.id), p = presenceFromRank(r), glow = colorGlow[s.color];
         const lines = r < 2 ? utterances.filter((u) => u.speakerId === s.id).slice(r === 0 ? -2 : -1).reverse() : [];
         return (
